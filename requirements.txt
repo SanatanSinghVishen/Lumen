@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+langgraph
+langchain
+langchain-google-genai
+langchain-chroma
+chromadb
+tavily-python
+redis
+langgraph-checkpoint-redis
+streamlit
+pydantic
+slowapi
+weasyprint
+python-dotenv
