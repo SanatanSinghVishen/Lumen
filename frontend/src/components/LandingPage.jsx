@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { IconSitemap, IconWorldSearch, IconBrain, IconUserCheck, IconSearch, IconArrowRight } from "@tabler/icons-react";
 import { API_URL } from "../App";
@@ -6,7 +6,23 @@ import { API_URL } from "../App";
 export default function LandingPage() {
   const [query, setQuery] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showColdStartBanner, setShowColdStartBanner] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkHealth = async () => {
+      const start = Date.now();
+      try {
+        await fetch(`${API_URL}/health`);
+        const elapsed = Date.now() - start;
+        // If health check took > 3 seconds, server was cold
+        if (elapsed > 3000) setShowColdStartBanner(true);
+      } catch {
+        setShowColdStartBanner(true);
+      }
+    };
+    checkHealth();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,8 +49,25 @@ export default function LandingPage() {
     { num: "04", icon: <IconUserCheck size={22} stroke={1.5} />, label: "You approve", desc: "Final human review and feedback" },
   ];
 
+  const EXAMPLE_QUERIES = [
+    "LangGraph vs AutoGen: which is better for production AI agents?",
+    "Breakthroughs in LLM reasoning and planning in 2025",
+    "How does RAG compare to fine-tuning for enterprise knowledge bases?",
+  ];
+
   return (
     <div className="flex flex-col w-full">
+      {showColdStartBanner && (
+        <div style={{
+          background: "#FAEEDA", borderBottom: "0.5px solid #FAC775",
+          padding: ".5rem 1.5rem", fontSize: "12px", color: "#854F0B",
+          display: "flex", alignItems: "center", gap: "8px"
+        }}>
+          <i className="ti ti-clock" aria-hidden="true" />
+          The backend is warming up from a cold start — your first query may take an extra 30–60 seconds.
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="flex flex-col items-center text-center pt-16 pb-10 px-6">
         <div className="inline-flex items-center px-3 py-1 bg-[#EBF2FF] text-[#1A56DB] text-[11px] font-medium border border-[#B5D4F4] rounded-full mb-6">
@@ -72,6 +105,24 @@ export default function LandingPage() {
             </button>
           </div>
         </form>
+
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center", margin: ".75rem 0" }}>
+          {EXAMPLE_QUERIES.map((q) => (
+            <button
+              key={q}
+              onClick={() => setQuery(q)}
+              style={{
+                fontSize: "11px", padding: "4px 12px", borderRadius: "20px",
+                background: "var(--color-background-secondary)",
+                border: "0.5px solid var(--color-border-secondary)",
+                color: "var(--color-text-secondary)", cursor: "pointer",
+              }}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+
         <div className="text-[11px] text-[#9CA3AF]">
           Takes ~25 seconds · Try the live demo
         </div>

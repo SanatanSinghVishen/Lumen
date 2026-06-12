@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { API_URL } from "../App";
+import ErrorScreen from "./ErrorScreen";
 
 export default function ReviewPage() {
   const { thread_id } = useParams();
@@ -11,16 +12,35 @@ export default function ReviewPage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [status, setStatus] = useState("awaiting_review");
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     async function fetchReview() {
       try {
         const res = await fetch(`${API_URL}/review/${thread_id}`);
+        
+        if (res.status === 404) {
+          setError("session_expired");
+          return;
+        }
+
         const json = await res.json();
+        
+        if (json.status === "thread_not_found" || json.detail === "thread_not_found") {
+          setError("session_expired");
+          return;
+        }
+
+        if (json.status === "error") {
+          setError("pipeline_failed");
+          return;
+        }
+
         setData(json);
         setStatus(json.status);
       } catch (err) {
         console.error(err);
+        setError("network_error");
       }
     }
     fetchReview();
@@ -44,6 +64,10 @@ export default function ReviewPage() {
       setSubmitting(false);
     }
   };
+
+  if (error) {
+    return <ErrorScreen type={error} onRetry={() => navigate("/")} />;
+  }
 
   if (!data) {
     return <div className="flex-1 p-6 text-[13px] text-[#6B7280]">Loading review...</div>;

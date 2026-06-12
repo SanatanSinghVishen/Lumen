@@ -20,7 +20,11 @@ app = FastAPI(title="LUMEN Multi-Agent AI", description="Autonomous Research Age
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",        # Vite dev server
+        os.getenv("FRONTEND_URL", ""),  # injected at runtime from Render env vars
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,6 +41,7 @@ async def health():
         "status": "ok",
         "langsmith_tracing": os.environ.get("LANGCHAIN_TRACING_V2") == "true",
         "checkpointer": "MemorySaver",
+        "cors_origin": os.getenv("FRONTEND_URL", "not set"),
         "version": "1.0.0"
     }
 

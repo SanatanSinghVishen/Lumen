@@ -2,26 +2,47 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { IconSitemap, IconWorldSearch, IconBrain, IconCheck } from "@tabler/icons-react";
 import { API_URL } from "../App";
+import ErrorScreen from "./ErrorScreen";
 
 export default function LoadingPage() {
   const { thread_id } = useParams();
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
+  const [error, setError] = useState(null);
 
   // Poll for status
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`${API_URL}/review/${thread_id}`);
+        
+        if (res.status === 404) {
+          setError("session_expired");
+          return;
+        }
+
         const data = await res.json();
         
+        if (data.status === "thread_not_found" || data.detail === "thread_not_found") {
+          setError("session_expired");
+          return;
+        }
+
+        if (data.status === "error") {
+          setError("pipeline_failed");
+          return;
+        }
+
         if (data.status === "awaiting_review") {
           navigate(`/review/${thread_id}`);
+          return;
         } else if (data.status === "complete") {
           navigate(`/result/${thread_id}`);
+          return;
         }
       } catch (err) {
         console.error("Polling error:", err);
+        setError("network_error");
       }
     }, 3000);
 
@@ -42,6 +63,10 @@ export default function LoadingPage() {
     { icon: <IconCheck size={20} />, label: "Retrieving documents..." },
     { icon: <IconBrain size={20} />, label: "Synthesising report..." }
   ];
+
+  if (error) {
+    return <ErrorScreen type={error} onRetry={() => navigate("/")} />;
+  }
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-6 bg-white min-h-[calc(100vh-120px)]">
