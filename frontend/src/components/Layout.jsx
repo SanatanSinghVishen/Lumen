@@ -32,10 +32,10 @@ export default function Layout() {
             Built by <span className="font-medium text-[#1A56DB]">Sanatan Singh</span> · IIIT Nagpur · B.Tech CSE 2027
           </div>
           <div className="flex items-center space-x-4 text-[#6B7280]">
-            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#111827] transition-colors">
+            <a href="https://www.linkedin.com/in/sanatan-singh-55b3502a3/" target="_blank" rel="noopener noreferrer" className="hover:text-[#111827] transition-colors">
               LinkedIn ↗
             </a>
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#111827] transition-colors">
+            <a href="https://github.com/SanatanSinghVishen/Lumen" target="_blank" rel="noopener noreferrer" className="hover:text-[#111827] transition-colors">
               GitHub ↗
             </a>
           </div>
