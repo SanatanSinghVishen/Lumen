@@ -4,7 +4,6 @@ from sse_starlette.sse import EventSourceResponse
 import asyncio
 import json
 from api.schemas import QueryRequest, QueryResponse, ReviewResponse, ApproveRequest
-from graph.graph import app_graph
 
 router = APIRouter()
 
