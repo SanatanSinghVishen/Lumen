@@ -61,20 +61,23 @@ async def get_review(thread_id: str):
         "status": "running"
     }
 
-@router.post("/approve/{thread_id}")
-async def approve_draft(thread_id: str, request: ApproveRequest):
+def resume_graph(thread_id: str, command_payload: dict):
     config = {"configurable": {"thread_id": thread_id}}
-    
+    try:
+        from langgraph.types import Command
+        app_graph.invoke(Command(resume=command_payload), config=config)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+
+@router.post("/approve/{thread_id}")
+async def approve_draft(thread_id: str, request: ApproveRequest, background_tasks: BackgroundTasks):
     command_payload = {
         "action": request.action,
         "edits": request.edits,
         "notes": request.notes
     }
     
-    try:
-        from langgraph.types import Command
-        app_graph.invoke(Command(resume=command_payload), config=config)
-    except Exception as e:
-        pass
+    background_tasks.add_task(resume_graph, thread_id, command_payload)
 
     return {"status": "Resumed graph execution", "action": request.action}

@@ -141,7 +141,7 @@ export default function ReviewPage() {
                   onChange={(e) => setFeedback(e.target.value)}
                 />
                 <button
-                  onClick={() => handleAction("retry")}
+                  onClick={() => handleAction("reject")}
                   disabled={submitting || !feedback.trim()}
                   className="text-[12px] font-medium text-[#1A56DB] hover:underline disabled:opacity-50"
                 >
