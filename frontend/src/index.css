@@ -2,40 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    @apply bg-background text-text font-sans antialiased;
+:root {
+  --color-brand: #1A56DB;
+  --color-background-secondary: #F9FAFB;
+  --color-border: #E5E7EB;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  color: var(--color-text-primary);
+  background-color: #ffffff;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Global resets for constraints */
+* {
+  transition: all 0.15s ease;
+  box-shadow: none !important;
+}
+
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px #EBF2FF !important;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
   }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0; /* Starts hidden */
+}
+
+@keyframes pulseRing {
+  0% { box-shadow: 0 0 0 0 rgba(235, 242, 255, 0.7) !important; }
+  70% { box-shadow: 0 0 0 6px rgba(235, 242, 255, 0) !important; }
+  100% { box-shadow: 0 0 0 0 rgba(235, 242, 255, 0) !important; }
+}
+
+.animate-pulse-ring {
+  animation: pulseRing 2s infinite;
+}
+
+/* Global layout utility */
+.border-custom {
+  border: 0.5px solid var(--color-border);
 }
 
 /* Markdown styling for the report */
 .prose {
-  @apply text-textMuted;
+  color: var(--color-text-secondary);
 }
 .prose h1, .prose h2, .prose h3 {
-  @apply text-text font-medium mt-8 mb-4 tracking-tight;
+  color: var(--color-text-primary);
+  font-weight: 500;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  letter-spacing: -0.025em;
 }
+.prose h1 { font-size: 1.125rem; }
 .prose p {
-  @apply mb-4 leading-relaxed;
+  margin-bottom: 1rem;
+  line-height: 1.75;
 }
 .prose ul {
-  @apply list-disc list-outside ml-6 mb-4;
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
 }
 .prose li {
-  @apply mb-1;
-}
-.prose code {
-  @apply font-mono bg-surfaceHighlight px-1.5 py-0.5 rounded text-sm text-text;
-}
-.prose pre {
-  @apply font-mono bg-surfaceHighlight p-4 rounded-lg my-4 overflow-x-auto text-sm;
-}
-.prose pre code {
-  @apply bg-transparent p-0 text-textMuted;
+  margin-bottom: 0.25rem;
 }
 .prose a {
-  @apply text-primary hover:underline;
+  color: var(--color-brand);
 }
-.prose blockquote {
-  @apply border-l-2 border-border pl-4 text-textMuted italic my-4;
+.prose a:hover {
+  text-decoration: underline;
 }
