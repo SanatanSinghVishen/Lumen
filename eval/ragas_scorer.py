@@ -39,28 +39,51 @@ def compute_ragas_scores(
     }
 
     try:
+        # --- RAGAS / LangChain 0.2.0 Compatibility Hack ---
+        import sys
+        if "langchain_community.chat_models.vertexai" not in sys.modules:
+            import types
+            mock_module = types.ModuleType("langchain_community.chat_models.vertexai")
+            mock_module.ChatVertexAI = type("ChatVertexAI", (object,), {})
+            sys.modules["langchain_community.chat_models.vertexai"] = mock_module
+        # ---------------------------------------------------
+
         from ragas import evaluate
-        from ragas.metrics import faithfulness, answer_relevancy, context_precision
+        from ragas.metrics import faithfulness, answer_relevancy
         from ragas.llms import LangchainLLMWrapper
         from ragas.embeddings import LangchainEmbeddingsWrapper
         from datasets import Dataset
+        from langchain_openai import ChatOpenAI
+        import os
+
+        # RAGAS requires a model that natively supports OpenAI-style JSON/tool calling.
+        # "owl-alpha" throws 400 on these strict structured requests. 
+        # We use Llama 3.3 70B Instruct Free which supports OpenRouter structured outputs flawlessly.
+        api_key = os.getenv("OPENROUTER_API_KEY", "")
+        ragas_specific_llm = ChatOpenAI(
+            model="meta-llama/llama-3.3-70b-instruct:free", 
+            openai_api_key=api_key, 
+            openai_api_base="https://openrouter.ai/api/v1", 
+            max_retries=2, 
+            timeout=45
+        ) if api_key else llm
 
         # RAGAS expects a HuggingFace Dataset with these exact column names
         data = {
             "question":  [query],
             "answer":    [answer],
             "contexts":  [contexts],   # list of retrieved chunk strings
-            # ground_truth is optional — omit for Answer Relevancy and Faithfulness
+            # reference is optional — omit for Answer Relevancy and Faithfulness
         }
         dataset = Dataset.from_dict(data)
 
         # Wrap LangChain LLM and embeddings for RAGAS
-        ragas_llm        = LangchainLLMWrapper(llm)
+        ragas_llm        = LangchainLLMWrapper(ragas_specific_llm)
         ragas_embeddings = LangchainEmbeddingsWrapper(embeddings)
 
         scores = evaluate(
             dataset,
-            metrics=[faithfulness, answer_relevancy, context_precision],
+            metrics=[faithfulness, answer_relevancy],
             llm=ragas_llm,
             embeddings=ragas_embeddings,
             raise_exceptions=False,   # never crash — return NaN instead

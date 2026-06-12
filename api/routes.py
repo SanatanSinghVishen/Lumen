@@ -157,7 +157,7 @@ async def stream_thread(thread_id: str, request: Request):
                         }
 
                 # ── HITL node reached — graph paused ───────────────────
-                elif kind == "on_chain_start" and name == "hitl":
+                if kind == "on_chain_start" and name == "hitl":
                     yield {
                         "event": "hitl",
                         "data": json.dumps({"thread_id": thread_id})

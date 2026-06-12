@@ -1,7 +1,11 @@
 from langgraph.types import interrupt
 from graph.state import AgentState
+from langchain_core.runnables.config import RunnableConfig, var_child_runnable_config
 
-async def hitl_node(state: AgentState) -> dict:
+async def hitl_node(state: AgentState, config: RunnableConfig) -> dict:
+    # Explicitly restore context var so interrupt() doesn't fail in async generators
+    var_child_runnable_config.set(config)
+
     draft = state.get("draft_report", state.get("merged_context", ""))
     score = state.get("eval_score", 0.0)
     

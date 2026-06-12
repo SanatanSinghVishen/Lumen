@@ -74,12 +74,14 @@ async def ragas_eval_node(state: AgentState) -> AgentState:
                 "ragas_error":       "no_contexts",
             }
 
-        scores = compute_ragas_scores(
-            query=state["query"],
-            answer=state.get("draft_report") or state.get("merged_context", ""),
-            contexts=contexts,
-            llm=llm,
-            embeddings=embeddings
+        import asyncio
+        scores = await asyncio.to_thread(
+            compute_ragas_scores,
+            state["query"],
+            state.get("draft_report") or state.get("merged_context", ""),
+            contexts,
+            llm,
+            embeddings
         )
 
         return {

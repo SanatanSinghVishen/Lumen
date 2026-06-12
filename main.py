@@ -23,9 +23,8 @@ async def lifespan(app):
     the connection fails — so local dev still works without a DB.
     """
     global checkpointer, app_graph
-
     postgres_url = os.getenv("POSTGRES_URL", "").strip()
-
+    
     if postgres_url:
         try:
             from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
@@ -37,7 +36,7 @@ async def lifespan(app):
             from langgraph.checkpoint.memory import MemorySaver
             checkpointer = MemorySaver()
     else:
-        logger.info("Checkpointer: no POSTGRES_URL found — using MemorySaver for local dev")
+        logger.info("Checkpointer: FORCED MemorySaver for debugging")
         from langgraph.checkpoint.memory import MemorySaver
         checkpointer = MemorySaver()
 
