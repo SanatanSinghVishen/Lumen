@@ -1,7 +1,7 @@
 from langgraph.types import interrupt
 from graph.state import AgentState
 
-def hitl_node(state: AgentState) -> dict:
+async def hitl_node(state: AgentState) -> dict:
     draft = state.get("draft_report", state.get("merged_context", ""))
     score = state.get("eval_score", 0.0)
     

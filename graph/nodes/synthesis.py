@@ -3,7 +3,7 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from graph.state import AgentState
 from config import OPENROUTER_API_KEY
 
-llm = ChatOpenAI(model="openrouter/owl-alpha", openai_api_key=OPENROUTER_API_KEY, openai_api_base="https://openrouter.ai/api/v1", max_retries=1) if OPENROUTER_API_KEY else None
+llm = ChatOpenAI(model="nvidia/nemotron-3-ultra-550b-a55b:free", openai_api_key=OPENROUTER_API_KEY, openai_api_base="https://openrouter.ai/api/v1", max_retries=1, timeout=45) if OPENROUTER_API_KEY else None
 
 SYSTEM_PROMPT = """You are a research synthesiser. Given web search results and document retrieval results, produce a unified context block. 
 You must: 

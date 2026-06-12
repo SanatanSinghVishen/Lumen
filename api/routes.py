@@ -7,19 +7,15 @@ from api.schemas import QueryRequest, QueryResponse, ReviewResponse, ApproveRequ
 
 router = APIRouter()
 
-async def run_graph(thread_id: str, query: str):
+@router.post("/query", response_model=QueryResponse)
+async def submit_query(request: QueryRequest):
+    thread_id = str(uuid.uuid4())
     from main import app_graph
     config = {"configurable": {"thread_id": thread_id}}
-    try:
-        await app_graph.ainvoke({"query": query}, config=config)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-
-@router.post("/query", response_model=QueryResponse)
-async def submit_query(request: QueryRequest, background_tasks: BackgroundTasks):
-    thread_id = str(uuid.uuid4())
-    background_tasks.add_task(run_graph, thread_id, request.query)
+    
+    # Write the query to the thread state without starting execution
+    await app_graph.aupdate_state(config, {"query": request.query})
+    
     return {"thread_id": thread_id, "status": "running"}
 
 @router.get("/review/{thread_id}")
