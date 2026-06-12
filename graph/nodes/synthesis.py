@@ -1,9 +1,9 @@
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from graph.state import AgentState
-from config import GROQ_API_KEY
+from config import OPENROUTER_API_KEY
 
-llm = ChatGroq(model="llama3-70b-8192", api_key=GROQ_API_KEY, max_retries=1) if GROQ_API_KEY else None
+llm = ChatOpenAI(model="meta-llama/llama-3-8b-instruct:free", openai_api_key=OPENROUTER_API_KEY, openai_api_base="https://openrouter.ai/api/v1", max_retries=1) if OPENROUTER_API_KEY else None
 
 SYSTEM_PROMPT = """You are a research synthesiser. Given web search results and document retrieval results, produce a unified context block. 
 You must: 
@@ -15,7 +15,7 @@ Output as structured Markdown."""
 
 def synthesis_node(state: AgentState) -> dict:
     if not llm:
-        return {"merged_context": "Mock merged context. Gemini API key is missing."}
+        return {"merged_context": "Mock merged context. OpenRouter API key is missing."}
         
     web_res = state.get("web_results", [])
     rag_res = state.get("rag_results", [])
@@ -31,6 +31,6 @@ def synthesis_node(state: AgentState) -> dict:
         response = llm.invoke(messages)
         content = response.content
     except Exception as e:
-        content = f"Mock merged context. Your Gemini API key appears to be invalid or unauthorized. Error: {str(e)}"
+        content = f"Mock merged context. Your OpenRouter API key appears to be invalid or unauthorized. Error: {str(e)}"
     
     return {"merged_context": content}

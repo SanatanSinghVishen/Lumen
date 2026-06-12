@@ -18,20 +18,32 @@ export default function ReviewPage() {
   const [status, setStatus] = useState("awaiting_review"); // awaiting_review | complete
 
   useEffect(() => {
+    let interval;
     async function fetchReview() {
       try {
         const res = await fetch(`${API_URL}/review/${threadId}`);
         const json = await res.json();
         setData(json);
         setStatus(json.status);
-        setLoading(false);
+        if (json.status !== "running") {
+          setLoading(false);
+        }
       } catch (err) {
         console.error(err);
         setLoading(false);
       }
     }
+    
+    // Initial fetch
     fetchReview();
-  }, [threadId]);
+    
+    // If it's running, poll every 2 seconds
+    if (status === "running" || loading) {
+      interval = setInterval(fetchReview, 2000);
+    }
+    
+    return () => clearInterval(interval);
+  }, [threadId, status, loading]);
 
   const handleAction = async (action) => {
     setSubmitting(true);
@@ -44,8 +56,11 @@ export default function ReviewPage() {
       if (action === "approve") {
         setStatus("complete");
       } else {
-        // If rejected, go back to query page to wait or just wait here
-        navigate("/");
+        // If rejected, set status to running so it shows a loading screen while revising
+        setStatus("running");
+        setLoading(true);
+        setShowFeedback(false);
+        setFeedback("");
       }
     } catch (err) {
       console.error(err);
@@ -152,7 +167,7 @@ export default function ReviewPage() {
                   CANCEL
                 </button>
                 <button
-                  onClick={() => handleAction("retry")}
+                  onClick={() => handleAction("reject")}
                   disabled={submitting || !feedback.trim()}
                   className="flex-1 bg-red-500/10 text-red-500 border border-red-500/20 font-mono text-xs py-1.5 hover:bg-red-500/20 disabled:opacity-50"
                 >

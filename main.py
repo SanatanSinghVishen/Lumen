@@ -16,7 +16,7 @@ app = FastAPI(title="LUMEN Multi-Agent AI", description="Autonomous Research Age
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8501"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

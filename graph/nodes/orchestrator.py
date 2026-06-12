@@ -1,10 +1,10 @@
 import json
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from graph.state import AgentState
-from config import GROQ_API_KEY
+from config import OPENROUTER_API_KEY
 
-llm = ChatGroq(model="llama3-70b-8192", api_key=GROQ_API_KEY, max_retries=1) if GROQ_API_KEY else None
+llm = ChatOpenAI(model="meta-llama/llama-3-8b-instruct:free", openai_api_key=OPENROUTER_API_KEY, openai_api_base="https://openrouter.ai/api/v1", max_retries=1) if OPENROUTER_API_KEY else None
 
 SYSTEM_PROMPT = """You are a research task planner. Given a query and optional retry feedback, decompose the query into 2–4 specific sub-tasks for: (1) web search, (2) document retrieval, (3) synthesis. If retry feedback is provided, adjust the sub-tasks to address the gaps identified.
 Output MUST be a raw JSON array of strings, e.g., ["task 1", "task 2"]. Do not wrap in markdown code blocks."""

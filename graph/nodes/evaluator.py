@@ -1,13 +1,13 @@
 import json
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from graph.state import AgentState
 from eval.judge_prompt import JUDGE_SYSTEM_PROMPT
-from config import GROQ_API_KEY
+from config import OPENROUTER_API_KEY, EVAL_THRESHOLD
 
 from langsmith import traceable
 
-llm = ChatGroq(model="llama3-70b-8192", api_key=GROQ_API_KEY, max_retries=1) if GROQ_API_KEY else None
+llm = ChatOpenAI(model="meta-llama/llama-3-8b-instruct:free", openai_api_key=OPENROUTER_API_KEY, openai_api_base="https://openrouter.ai/api/v1", max_retries=1) if OPENROUTER_API_KEY else None
 
 @traceable(name="evaluator-judge", run_type="llm")
 def evaluator_node(state: AgentState) -> dict:
@@ -44,7 +44,7 @@ def evaluator_node(state: AgentState) -> dict:
     except Exception as e:
         # If the API key is invalid, don't trigger the 3x retry loop which wastes 3 minutes
         score = 1.0
-        feedback = f"Failed to parse evaluation because your Gemini API key is likely invalid or unauthorized. Error: {str(e)}"
+        feedback = f"Failed to parse evaluation because your OpenRouter API key is likely invalid or unauthorized. Error: {str(e)}"
         
     return {
         "draft_report": draft,
