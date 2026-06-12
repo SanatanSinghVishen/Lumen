@@ -13,7 +13,7 @@ const NODE_LABELS = {
 };
 
 export default function LoadingPage() {
-  const { threadId }       = useParams();
+  const { thread_id }       = useParams();
   const navigate           = useNavigate();
   const [tokens, setTokens]         = useState("");
   const [activeNode, setActiveNode] = useState("orchestrator");
@@ -24,7 +24,7 @@ export default function LoadingPage() {
 
   useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-    const es = new EventSource(`${API_URL}/stream/${threadId}`);
+    const es = new EventSource(`${API_URL}/stream/${thread_id}`);
     esRef.current = es;
 
     es.addEventListener("status", (e) => {
@@ -45,9 +45,9 @@ export default function LoadingPage() {
     });
 
     es.addEventListener("hitl", (e) => {
-      const { thread_id } = JSON.parse(e.data);
+      const { thread_id: hitl_thread_id } = JSON.parse(e.data);
       es.close();
-      navigate(`/review/${thread_id}`, {
+      navigate(`/review/${hitl_thread_id}`, {
         state: { prefetchedReport: tokens }  // pass accumulated tokens
       });
     });
@@ -72,7 +72,7 @@ export default function LoadingPage() {
     };
 
     return () => es.close();
-  }, [threadId]);
+  }, [thread_id]);
 
   if (error) {
     return <ErrorScreen type={error} onRetry={() => navigate("/")} />;
