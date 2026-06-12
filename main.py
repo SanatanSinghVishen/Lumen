@@ -3,41 +3,10 @@ import logging
 
 logger = logging.getLogger("lumen")
 
-def init_langsmith() -> bool:
-    """
-    Attempts to enable LangSmith tracing.
-    Returns True if successfully enabled, False if disabled or failed.
-    Never raises — always degrades silently.
-    """
-    try:
-        api_key = os.getenv("LANGCHAIN_API_KEY", "").strip()
-        tracing = os.getenv("LANGCHAIN_TRACING_V2", "false").lower()
-
-        if not api_key or tracing != "true":
-            logger.info("LangSmith: disabled (no API key or tracing off)")
-            os.environ["LANGCHAIN_TRACING_V2"] = "false"
-            return False
-
-        # Validate the key is reachable before committing
-        from langsmith import Client
-        client = Client(api_key=api_key)
-        client.list_projects(limit=1)  # lightweight auth check
-
-        os.environ["LANGCHAIN_TRACING_V2"] = "true"
-        os.environ["LANGCHAIN_API_KEY"]     = api_key
-        os.environ["LANGCHAIN_PROJECT"]     = os.getenv("LANGCHAIN_PROJECT", "lumen-research-agent")
-        logger.info("LangSmith: tracing enabled → project '%s'", os.getenv("LANGCHAIN_PROJECT"))
-        return True
-
-    except Exception as e:
-        # Covers: 401 Unauthorized, 403 Forbidden, network errors,
-        # rate limits, import errors, any LangSmith SDK exception
-        logger.warning("LangSmith: disabled due to error — %s", str(e))
-        os.environ["LANGCHAIN_TRACING_V2"] = "false"
-        return False
-
-# Call once at startup — before any LangGraph imports
-LANGSMITH_ENABLED = init_langsmith()
+# Enforce LangSmith Tracing
+os.environ["LANGCHAIN_TRACING_V2"] = os.getenv("LANGCHAIN_TRACING_V2", "true")
+os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY", "")
+os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "lumen-research-agent")
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -66,7 +35,7 @@ app.include_router(router)
 async def health():
     return {
         "status": "ok",
-        "langsmith_tracing": LANGSMITH_ENABLED,
+        "langsmith_tracing": os.environ.get("LANGCHAIN_TRACING_V2") == "true",
         "checkpointer": "MemorySaver",
         "version": "1.0.0"
     }
