@@ -11,9 +11,9 @@ export default function Layout() {
             <Link to="/" className="font-medium text-sm tracking-[0.04em]">LUMEN</Link>
           </div>
           <div className="flex items-center space-x-6 text-sm text-[#6B7280]">
-            <Link to="/" className="hover:text-[#111827] transition-colors">How it works</Link>
-            <Link to="/" className="hover:text-[#111827] transition-colors">Architecture</Link>
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#111827] transition-colors flex items-center">
+            <Link to="/how-it-works" className="hover:text-[#111827] transition-colors">How it works</Link>
+            <Link to="/architecture" className="hover:text-[#111827] transition-colors">Architecture</Link>
+            <a href="https://github.com/SanatanSinghVishen/Lumen" target="_blank" rel="noopener noreferrer" className="hover:text-[#111827] transition-colors flex items-center">
               GitHub ↗
             </a>
           </div>

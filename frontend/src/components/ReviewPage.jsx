@@ -185,11 +185,6 @@ export default function ReviewPage() {
               value={data.answer_relevancy}
               hint="Report directly addresses the query"
             />
-            <MetricRow
-              label="Context precision"
-              value={data.context_precision}
-              hint="Retriever surfaced the most relevant chunks"
-            />
             {data.ragas_error && (
               <p style={{ fontSize: "10px", color: "var(--color-text-secondary)", marginTop: "4px" }}>
                 ⚠ RAGAS metrics unavailable: {data.ragas_error}
@@ -240,14 +235,17 @@ export default function ReviewPage() {
               Sources used
             </div>
             <ul className="space-y-2">
-              {[1, 2, 3].map((_, idx) => (
+              {(data.web_results || []).map((src, idx) => (
                 <li key={idx} className="flex items-start">
                   <div className="w-[5px] h-[5px] rounded-full bg-[#1A56DB] mt-[5px] mr-2 flex-shrink-0"></div>
-                  <span className="text-[11px] text-[#6B7280] truncate w-full" title="Source link">
-                    example.com/source-title-truncate-to-36-chars...
-                  </span>
+                  <a href={src.url} target="_blank" rel="noreferrer" className="text-[11px] text-[#6B7280] hover:text-[#1A56DB] truncate w-full" title={src.url}>
+                    {src.title || src.url}
+                  </a>
                 </li>
               ))}
+              {(!data.web_results || data.web_results.length === 0) && (
+                <li className="text-[11px] text-[#9CA3AF]">No web sources used.</li>
+              )}
             </ul>
           </div>
 

@@ -81,12 +81,16 @@ def compute_ragas_scores(
         ragas_llm        = LangchainLLMWrapper(ragas_specific_llm)
         ragas_embeddings = LangchainEmbeddingsWrapper(embeddings)
 
+        from ragas.run_config import RunConfig
+        run_config = RunConfig(max_workers=1, max_retries=2)
+
         scores = evaluate(
             dataset,
             metrics=[faithfulness, answer_relevancy],
             llm=ragas_llm,
             embeddings=ragas_embeddings,
             raise_exceptions=False,   # never crash — return NaN instead
+            run_config=run_config,
         )
 
         df = scores.to_pandas()
