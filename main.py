@@ -67,7 +67,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://localhost:5173",        # Vite dev server
-        os.getenv("FRONTEND_URL", ""),  # injected at runtime from Render env vars
+        os.getenv("FRONTEND_URL", "").rstrip("/"),  # injected at runtime from Render env vars
     ],
     allow_credentials=True,
     allow_methods=["*"],
