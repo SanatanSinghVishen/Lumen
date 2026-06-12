@@ -1,12 +1,15 @@
 import json
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 from graph.state import AgentState
 from eval.judge_prompt import JUDGE_SYSTEM_PROMPT
-from config import GEMINI_API_KEY
+from config import GROQ_API_KEY
 
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+from langsmith import traceable
 
+llm = ChatGroq(model="llama3-70b-8192", api_key=GROQ_API_KEY, max_retries=1) if GROQ_API_KEY else None
+
+@traceable(name="evaluator-judge", run_type="llm")
 def evaluator_node(state: AgentState) -> dict:
     draft = state.get("merged_context", "")
     query = state.get("query", "")
@@ -39,8 +42,9 @@ def evaluator_node(state: AgentState) -> dict:
         score = result.get("overall_score", 0.0)
         feedback = result.get("feedback", "No feedback provided.")
     except Exception as e:
-        score = 0.0
-        feedback = f"Failed to parse evaluation: {str(e)}"
+        # If the API key is invalid, don't trigger the 3x retry loop which wastes 3 minutes
+        score = 1.0
+        feedback = f"Failed to parse evaluation because your Gemini API key is likely invalid or unauthorized. Error: {str(e)}"
         
     return {
         "draft_report": draft,

@@ -2,7 +2,7 @@ fastapi
 uvicorn
 langgraph
 langchain
-langchain-google-genai
+langchain-groq
 langchain-chroma
 chromadb
 tavily-python
@@ -13,3 +13,4 @@ pydantic
 slowapi
 weasyprint
 python-dotenv
+langsmith>=0.1.0

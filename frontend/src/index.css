@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-text font-sans antialiased;
+  }
+}
+
+/* Markdown styling for the report */
+.prose {
+  @apply text-textMuted;
+}
+.prose h1, .prose h2, .prose h3 {
+  @apply text-text font-medium mt-8 mb-4 tracking-tight;
+}
+.prose p {
+  @apply mb-4 leading-relaxed;
+}
+.prose ul {
+  @apply list-disc list-outside ml-6 mb-4;
+}
+.prose li {
+  @apply mb-1;
+}
+.prose code {
+  @apply font-mono bg-surfaceHighlight px-1.5 py-0.5 rounded text-sm text-text;
+}
+.prose pre {
+  @apply font-mono bg-surfaceHighlight p-4 rounded-lg my-4 overflow-x-auto text-sm;
+}
+.prose pre code {
+  @apply bg-transparent p-0 text-textMuted;
+}
+.prose a {
+  @apply text-primary hover:underline;
+}
+.prose blockquote {
+  @apply border-l-2 border-border pl-4 text-textMuted italic my-4;
+}

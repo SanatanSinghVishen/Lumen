@@ -1,10 +1,10 @@
 import json
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 from graph.state import AgentState
-from config import GEMINI_API_KEY
+from config import GROQ_API_KEY
 
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+llm = ChatGroq(model="llama3-70b-8192", api_key=GROQ_API_KEY, max_retries=1) if GROQ_API_KEY else None
 
 SYSTEM_PROMPT = """You are a research task planner. Given a query and optional retry feedback, decompose the query into 2–4 specific sub-tasks for: (1) web search, (2) document retrieval, (3) synthesis. If retry feedback is provided, adjust the sub-tasks to address the gaps identified.
 Output MUST be a raw JSON array of strings, e.g., ["task 1", "task 2"]. Do not wrap in markdown code blocks."""

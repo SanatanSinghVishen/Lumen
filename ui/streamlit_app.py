@@ -1,7 +1,8 @@
+import os
 import streamlit as st
 import requests
 
-API_URL = "http://localhost:8000"
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 st.set_page_config(page_title="LUMEN Reviewer", layout="wide")
 st.title("LUMEN Human-in-the-Loop Review")

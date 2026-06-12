@@ -1,7 +1,5 @@
 import os
 from langgraph.graph import StateGraph, START, END
-from langgraph.checkpoint.memory import MemorySaver
-# from langgraph.checkpoint.redis import RedisSaver
 from graph.state import AgentState
 
 from graph.nodes.orchestrator import orchestrator_node
@@ -72,8 +70,20 @@ workflow.add_conditional_edges(
 
 workflow.add_edge("output", END)
 
-# Use MemorySaver until Docker/Redis is setup, or use Redis if URL is provided
-# checkpointer = RedisSaver.from_conn_string(os.getenv("REDIS_URL", "redis://localhost:6379"))
-checkpointer = MemorySaver()
+import sys
+from langgraph.checkpoint.redis import RedisSaver
+import redis
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
+
+try:
+    # Test connection before initializing
+    client = redis.Redis.from_url(REDIS_URL)
+    client.ping()
+    checkpointer = RedisSaver(redis_client=client)
+    checkpointer.setup()
+except Exception as e:
+    print(f"FATAL: Cannot connect to Redis at {REDIS_URL}. Error: {e}", file=sys.stderr)
+    sys.exit(1)
 
 app_graph = workflow.compile(checkpointer=checkpointer)

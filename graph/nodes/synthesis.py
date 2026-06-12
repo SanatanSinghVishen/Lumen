@@ -1,9 +1,9 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 from graph.state import AgentState
-from config import GEMINI_API_KEY
+from config import GROQ_API_KEY
 
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+llm = ChatGroq(model="llama3-70b-8192", api_key=GROQ_API_KEY, max_retries=1) if GROQ_API_KEY else None
 
 SYSTEM_PROMPT = """You are a research synthesiser. Given web search results and document retrieval results, produce a unified context block. 
 You must: 
@@ -27,6 +27,10 @@ def synthesis_node(state: AgentState) -> dict:
         HumanMessage(content=content)
     ]
     
-    response = llm.invoke(messages)
+    try:
+        response = llm.invoke(messages)
+        content = response.content
+    except Exception as e:
+        content = f"Mock merged context. Your Gemini API key appears to be invalid or unauthorized. Error: {str(e)}"
     
-    return {"merged_context": response.content}
+    return {"merged_context": content}

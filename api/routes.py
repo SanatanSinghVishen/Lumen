@@ -1,37 +1,64 @@
 import uuid
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from api.schemas import QueryRequest, QueryResponse, ReviewResponse, ApproveRequest
 from graph.graph import app_graph
-from langchain_core.runnables import RunnableConfig
 
 router = APIRouter()
 
-@router.post("/query", response_model=QueryResponse)
-async def submit_query(request: QueryRequest):
-    thread_id = str(uuid.uuid4())
+def run_graph(thread_id: str, query: str):
     config = {"configurable": {"thread_id": thread_id}}
-    
-    # We use stream or invoke to start it.
-    # In a real app we might run this in a background task. For now, invoke runs until interrupt.
     try:
-        app_graph.invoke({"query": request.query}, config=config)
+        app_graph.invoke({"query": query}, config=config)
     except Exception as e:
-        pass # Ignore exceptions from interrupt or graph execution for this basic implementation
+        import traceback
+        traceback.print_exc()
 
-    return {"thread_id": thread_id, "status": "processing_or_paused"}
+@router.post("/query", response_model=QueryResponse)
+async def submit_query(request: QueryRequest, background_tasks: BackgroundTasks):
+    thread_id = str(uuid.uuid4())
+    background_tasks.add_task(run_graph, thread_id, request.query)
+    return {"thread_id": thread_id, "status": "running"}
 
-@router.get("/review/{thread_id}", response_model=ReviewResponse)
+@router.get("/review/{thread_id}")
 async def get_review(thread_id: str):
     config = {"configurable": {"thread_id": thread_id}}
     state = app_graph.get_state(config)
     
+    # Check if thread exists in checkpointer
     if not state.values:
-        raise HTTPException(status_code=404, detail="Thread not found")
+        # If it doesn't exist, it might still be initializing or running without saving first checkpoint
+        # However, ainvoke might take time to hit the first checkpoint.
+        # But per requirements, return "running" if thread exists but no HITL interrupt.
+        # If state.values is empty, we assume it's running.
+        return {
+            "thread_id": thread_id,
+            "status": "running"
+        }
+    
+    # Check if we have hit the HITL interrupt
+    next_node = state.next
+    if next_node and "hitl" in next_node:
+        return {
+            "thread_id": thread_id,
+            "status": "awaiting_review",
+            "draft_report": state.values.get("draft_report", state.values.get("merged_context", "")),
+            "eval_score": state.values.get("eval_score", 0.0),
+            "retry_count": state.values.get("retry_count", 0)
+        }
+    
+    # If there are no next nodes and it has values, it's completed
+    if not next_node and state.values:
+        return {
+            "thread_id": thread_id,
+            "status": "complete",
+            "final_report": state.values.get("final_report", state.values.get("draft_report", "")),
+            "draft_report": state.values.get("draft_report", ""),
+            "eval_score": state.values.get("eval_score", 0.0)
+        }
         
     return {
         "thread_id": thread_id,
-        "draft_report": state.values.get("draft_report", state.values.get("merged_context", "")),
-        "eval_score": state.values.get("eval_score", 0.0)
+        "status": "running"
     }
 
 @router.post("/approve/{thread_id}")
