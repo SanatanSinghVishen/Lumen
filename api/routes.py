@@ -55,6 +55,7 @@ async def get_review(thread_id: str):
         "answer_relevancy":  state.values.get("answer_relevancy"),
         "context_precision": state.values.get("context_precision"),
         "ragas_error":       state.values.get("ragas_error"),
+        "web_results":       state.values.get("web_results", []),
     }
 
 async def resume_graph(thread_id: str, command_payload: dict):
@@ -134,7 +135,7 @@ async def stream_thread(thread_id: str, request: Request):
                         }
 
                 # ── LLM token from synthesis node ──────────────────────
-                elif kind == "on_chat_model_stream" and "synthesis" in name.lower():
+                elif kind == "on_chat_model_stream" and "synthesis_llm" in event.get("tags", []):
                     chunk = data.get("chunk")
                     if chunk and hasattr(chunk, "content") and chunk.content:
                         yield {

@@ -2,19 +2,25 @@ import { Outlet, Link } from "react-router-dom";
 
 export default function Layout() {
   return (
-    <div className="min-h-screen flex flex-col bg-white text-[#111827] font-sans">
+    <div className="min-h-screen flex flex-col bg-[#000000] text-[#EDEDED] font-sans selection:bg-[#0070F3] selection:text-white">
       {/* Navbar */}
-      <nav className="fixed top-0 w-full bg-white z-50 border-custom border-b border-t-0 border-l-0 border-r-0">
+      <nav className="fixed top-0 w-full bg-[#000000]/80 backdrop-blur-md z-50 border-b border-[#222]">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 rounded-full bg-[#1A56DB]"></div>
-            <Link to="/" className="font-medium text-sm tracking-[0.04em]">LUMEN</Link>
+          <div className="flex items-center space-x-3 group cursor-pointer">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#0070F3] shadow-[0_0_10px_rgba(0,112,243,0.8)] group-hover:shadow-[0_0_15px_rgba(0,112,243,1)] transition-shadow"></div>
+            <Link to="/" className="font-semibold text-sm tracking-wider text-[#EDEDED]">LUMEN</Link>
           </div>
-          <div className="flex items-center space-x-6 text-sm text-[#6B7280]">
-            <Link to="/how-it-works" className="hover:text-[#111827] transition-colors">How it works</Link>
-            <Link to="/architecture" className="hover:text-[#111827] transition-colors">Architecture</Link>
-            <a href="https://github.com/SanatanSinghVishen/Lumen" target="_blank" rel="noopener noreferrer" className="hover:text-[#111827] transition-colors flex items-center">
-              GitHub ↗
+          <div className="flex items-center space-x-6 text-sm text-[#888888]">
+            <Link to="/how-it-works" className="hover:text-white transition-colors relative group">
+              How it works
+              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#0070F3] transition-all group-hover:w-full"></span>
+            </Link>
+            <Link to="/architecture" className="hover:text-white transition-colors relative group">
+              Architecture
+              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#0070F3] transition-all group-hover:w-full"></span>
+            </Link>
+            <a href="https://github.com/SanatanSinghVishen/Lumen" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors flex items-center group">
+              GitHub <span className="opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-1 transition-all text-[#0070F3]">↗</span>
             </a>
           </div>
         </div>
@@ -26,17 +32,17 @@ export default function Layout() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full border-custom border-t border-b-0 border-l-0 border-r-0 py-4 px-6 mt-auto">
-        <div className="max-w-7xl mx-auto flex items-center justify-between text-[11px] sm:text-xs">
-          <div className="text-[#6B7280]">
-            Built by <span className="font-medium text-[#1A56DB]">Sanatan Singh</span> · IIIT Nagpur · B.Tech CSE 2027
+      <footer className="w-full border-t border-[#222] py-5 px-6 mt-auto bg-[#000000]">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-[11px] sm:text-xs text-[#888888]">
+          <div className="mb-4 sm:mb-0">
+            Built by <span className="font-medium text-[#EDEDED]">Sanatan Singh</span> · IIIT Nagpur · B.Tech CSE 2027
           </div>
-          <div className="flex items-center space-x-4 text-[#6B7280]">
-            <a href="https://www.linkedin.com/in/sanatan-singh-55b3502a3/" target="_blank" rel="noopener noreferrer" className="hover:text-[#111827] transition-colors">
-              LinkedIn ↗
+          <div className="flex items-center space-x-5">
+            <a href="https://www.linkedin.com/in/sanatan-singh-55b3502a3/" target="_blank" rel="noopener noreferrer" className="hover:text-white hover:shadow-[0_0_8px_rgba(255,255,255,0.3)] transition-all">
+              LinkedIn
             </a>
-            <a href="https://github.com/SanatanSinghVishen/Lumen" target="_blank" rel="noopener noreferrer" className="hover:text-[#111827] transition-colors">
-              GitHub ↗
+            <a href="https://github.com/SanatanSinghVishen/Lumen" target="_blank" rel="noopener noreferrer" className="hover:text-white hover:shadow-[0_0_8px_rgba(255,255,255,0.3)] transition-all">
+              GitHub
             </a>
           </div>
         </div>

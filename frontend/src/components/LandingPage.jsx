@@ -15,7 +15,6 @@ export default function LandingPage() {
       try {
         await fetch(`${API_URL}/health`);
         const elapsed = Date.now() - start;
-        // If health check took > 3 seconds, server was cold
         if (elapsed > 3000) setShowColdStartBanner(true);
       } catch {
         setShowColdStartBanner(true);
@@ -43,10 +42,10 @@ export default function LandingPage() {
   };
 
   const steps = [
-    { num: "01", icon: <IconSitemap size={22} stroke={1.5} />, label: "Orchestrator decomposes", desc: "Breaks your query into parallel tasks" },
-    { num: "02", icon: <IconWorldSearch size={22} stroke={1.5} />, label: "Agents retrieve", desc: "Scours the web & documents instantly" },
-    { num: "03", icon: <IconBrain size={22} stroke={1.5} />, label: "LLM-as-judge scores", desc: "Synthesises and evaluates confidence" },
-    { num: "04", icon: <IconUserCheck size={22} stroke={1.5} />, label: "You approve", desc: "Final human review and feedback" },
+    { num: "01", icon: <IconSitemap size={20} stroke={1.5} />, label: "Orchestrator decomposes", desc: "Breaks your query into parallel tasks" },
+    { num: "02", icon: <IconWorldSearch size={20} stroke={1.5} />, label: "Agents retrieve", desc: "Scours the web & documents instantly" },
+    { num: "03", icon: <IconBrain size={20} stroke={1.5} />, label: "LLM-as-judge scores", desc: "Synthesises and evaluates confidence" },
+    { num: "04", icon: <IconUserCheck size={20} stroke={1.5} />, label: "You approve", desc: "Final human review and feedback" },
   ];
 
   const EXAMPLE_QUERIES = [
@@ -56,97 +55,88 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full relative overflow-hidden">
+      {/* Background Glow */}
+      <div className="absolute top-[-20%] left-1/2 transform -translate-x-1/2 w-[800px] h-[400px] bg-[#0070F3] opacity-20 blur-[120px] rounded-full pointer-events-none"></div>
+
       {showColdStartBanner && (
-        <div style={{
-          background: "#FAEEDA", borderBottom: "0.5px solid #FAC775",
-          padding: ".5rem 1.5rem", fontSize: "12px", color: "#854F0B",
-          display: "flex", alignItems: "center", gap: "8px"
-        }}>
-          <i className="ti ti-clock" aria-hidden="true" />
-          The backend is warming up from a cold start — your first query may take an extra 30–60 seconds.
+        <div className="bg-[#111] border-b border-[#333] px-6 py-2 text-[12px] text-[#888] flex items-center justify-center gap-2">
+          <i className="ti ti-clock animate-pulse" aria-hidden="true" />
+          Backend is warming up from a cold start — your first query may take an extra 30–60 seconds.
         </div>
       )}
 
       {/* Hero Section */}
-      <section className="flex flex-col items-center text-center pt-16 pb-10 px-6">
-        <div className="inline-flex items-center px-3 py-1 bg-[#EBF2FF] text-[#1A56DB] text-[11px] font-medium border border-[#B5D4F4] rounded-full mb-6">
-          <span className="mr-1">⚡</span> Agentic AI · Multi-Agent · RAG · HITL
+      <section className="flex flex-col items-center text-center pt-24 pb-16 px-6 relative z-10">
+        <div className="inline-flex items-center px-4 py-1.5 bg-[#111] text-[#EDEDED] text-[11px] font-medium border border-[#333] rounded-full mb-8 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
+          <span className="mr-2 text-[#0070F3] animate-pulse">●</span> Agentic AI · Multi-Agent · RAG · HITL
         </div>
         
-        <h1 className="text-[40px] font-medium leading-[1.2] tracking-tight mb-4 text-[#111827]">
+        <h1 className="text-[48px] sm:text-[56px] font-bold leading-[1.1] tracking-tight mb-6 text-transparent bg-clip-text bg-gradient-to-b from-white to-[#888]">
           Research anything.<br />
-          <span className="text-[#1A56DB]">Verified by AI, approved by you.</span>
+          Verified by AI, approved by you.
         </h1>
         
-        <p className="text-[15px] text-[#6B7280] max-w-[480px] mb-8 leading-relaxed">
+        <p className="text-[16px] text-[#888] max-w-[540px] mb-10 leading-relaxed font-light">
           Type a topic. Lumen deploys parallel agents to search the web, retrieve documents, synthesise findings, and score its own confidence — before asking you to approve.
         </p>
 
-        <form onSubmit={handleSubmit} className="w-full max-w-[560px] relative mb-3">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#6B7280]">
-            <IconSearch size={18} stroke={2} />
+        <form onSubmit={handleSubmit} className="w-full max-w-[600px] relative mb-6">
+          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-[#555]">
+            <IconSearch size={20} stroke={2} />
           </div>
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Latest breakthroughs in quantum error correction 2025"
-            className="w-full h-[52px] pl-11 pr-32 bg-[#F9FAFB] border-custom rounded-xl text-[15px] focus:bg-white placeholder:text-[#9CA3AF]"
+            className="w-full h-[60px] pl-14 pr-36 bg-[#0A0A0A] border border-[#333] rounded-2xl text-[15px] text-[#EDEDED] focus:border-[#0070F3] focus:bg-[#000] focus:shadow-[0_0_20px_rgba(0,112,243,0.3)] transition-all placeholder:text-[#555] outline-none"
             disabled={submitting}
           />
-          <div className="absolute inset-y-0 right-1.5 flex items-center">
+          <div className="absolute inset-y-0 right-2 flex items-center">
             <button 
               type="submit" 
               disabled={submitting || !query.trim()}
-              className="h-10 px-4 bg-[#1A56DB] text-white text-[13px] font-medium rounded-lg hover:bg-[#1546b5] disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              className="h-11 px-6 bg-[#EDEDED] text-[#000] text-[13px] font-bold rounded-xl hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors"
             >
-              Research <IconArrowRight size={14} className="ml-1" stroke={2} />
+              Research <IconArrowRight size={16} className="ml-1.5" stroke={2} />
             </button>
           </div>
         </form>
 
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center", margin: ".75rem 0" }}>
+        <div className="flex gap-3 flex-wrap justify-center mb-8">
           {EXAMPLE_QUERIES.map((q) => (
             <button
               key={q}
               onClick={() => setQuery(q)}
-              style={{
-                fontSize: "11px", padding: "4px 12px", borderRadius: "20px",
-                background: "var(--color-background-secondary)",
-                border: "0.5px solid var(--color-border-secondary)",
-                color: "var(--color-text-secondary)", cursor: "pointer",
-              }}
+              className="text-[12px] px-4 py-2 rounded-full bg-[#111] border border-[#222] text-[#888] hover:border-[#444] hover:text-[#EDEDED] transition-colors"
             >
               {q}
             </button>
           ))}
         </div>
 
-        <div className="text-[11px] text-[#9CA3AF]">
+        <div className="text-[12px] text-[#555] font-mono">
           Takes ~25 seconds · Try the live demo
         </div>
       </section>
 
       {/* Animated Pipeline Strip */}
-      <section className="w-full bg-[var(--color-background-secondary)] py-8 px-6 border-custom border-t border-b border-l-0 border-r-0">
+      <section className="w-full py-16 px-6 relative z-10 border-t border-[#111] bg-gradient-to-b from-[#000] to-[#0A0A0A]">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-[11px] uppercase tracking-widest text-[#9CA3AF] font-medium mb-6 text-center">
-            How Lumen works
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {steps.map((step, idx) => (
               <div 
                 key={idx} 
-                className="bg-white border-custom rounded-xl p-4 flex flex-col items-center text-center animate-fade-in-up"
-                style={{ animationDelay: `${idx * 80}ms` }}
+                className="bg-[#0A0A0A] border border-[#222] rounded-2xl p-6 flex flex-col items-start hover:border-[#444] transition-colors animate-fade-in-up"
+                style={{ animationDelay: `${idx * 100}ms` }}
               >
-                <div className="w-full flex justify-between items-start mb-3">
-                  <span className="text-[10px] font-medium text-[#1A56DB]">{step.num}</span>
-                  <div className="text-[#1A56DB]">{step.icon}</div>
+                <div className="w-full flex justify-between items-center mb-6">
+                  <span className="text-[11px] font-mono text-[#555]">{step.num}</span>
+                  <div className="text-[#EDEDED] bg-[#111] p-2 rounded-lg border border-[#222]">{step.icon}</div>
                 </div>
-                <h3 className="text-[12px] font-medium text-[#111827] mb-1.5 w-full text-left">{step.label}</h3>
-                <p className="text-[11px] text-[#6B7280] w-full text-left leading-relaxed">{step.desc}</p>
+                <h3 className="text-[14px] font-medium text-[#EDEDED] mb-2">{step.label}</h3>
+                <p className="text-[13px] text-[#888] leading-relaxed font-light">{step.desc}</p>
               </div>
             ))}
           </div>
@@ -154,10 +144,10 @@ export default function LandingPage() {
       </section>
 
       {/* Tech Stack Strip */}
-      <section className="w-full py-4 px-6 mt-auto">
-        <div className="max-w-4xl mx-auto flex flex-wrap justify-center gap-2">
+      <section className="w-full py-8 px-6 mt-auto border-t border-[#111]">
+        <div className="max-w-4xl mx-auto flex flex-wrap justify-center gap-3">
           {["LangGraph", "FastAPI", "ChromaDB", "Redis", "Gemini 2.5 Flash", "Tavily", "LangSmith", "Docker"].map((tech) => (
-            <div key={tech} className="px-3 py-1 bg-[var(--color-background-secondary)] border-custom rounded-full text-[11px] text-[#6B7280]">
+            <div key={tech} className="px-4 py-1.5 bg-[#0A0A0A] border border-[#222] rounded-full text-[12px] text-[#555] font-mono">
               {tech}
             </div>
           ))}

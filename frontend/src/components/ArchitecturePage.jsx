@@ -1,51 +1,88 @@
-import { Link } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+
+const ARCHITECTURE_CONTENT = `
+## Why LangGraph?
+
+Traditional LLM workflows are linear (like LangChain chains). But research requires loops: if an agent finds conflicting information, it needs to go back and search again. 
+
+LangGraph allows us to build **cyclic graphs** with persistent memory. 
+- **Stateful:** The entire pipeline shares a single \`AgentState\` object.
+- **Checkpointer:** PostgreSQL automatically saves the state at every step.
+- **Human-in-the-Loop:** LangGraph natively supports pausing execution (Interrupts) to let a human review the state before resuming.
+
+---
+
+## The Tech Stack
+
+LUMEN is built with modern, production-ready tools:
+
+* **React + Vite:** For a blazing fast, progressive SPA frontend.
+* **FastAPI:** Python backend for seamless integration with LangGraph.
+* **LangGraph:** The orchestrator for multi-agent cyclic workflows.
+* **PostgreSQL:** Persistent checkpointer for LangGraph memory.
+* **Tavily:** Deep-search API optimized for LLM agents.
+* **ChromaDB:** Local vector store for document embeddings.
+* **RAGAS:** Evaluation framework for RAG metrics.
+* **OpenRouter:** Routing LLM calls to Llama 3.3 and Gemini 2.5 Flash.
+`;
 
 export default function ArchitecturePage() {
-  const stack = [
-    { name: "React + Vite", type: "Frontend", desc: "A blazing fast, responsive user interface.", icon: "ti-brand-react" },
-    { name: "FastAPI", type: "Backend", desc: "Python web framework managing SSE streams and endpoints.", icon: "ti-server" },
-    { name: "LangGraph", type: "AI Orchestration", desc: "Manages the stateful, cyclic graphs where agents live.", icon: "ti-vector" },
-    { name: "PostgreSQL", type: "Memory / Checkpointing", desc: "Saves the 'brain state' of the agent so it can be paused for human review.", icon: "ti-database" },
-    { name: "OpenRouter", type: "LLM Access", desc: "Routes prompts to massive open-source models like Llama 3.", icon: "ti-cpu" }
-  ];
-
   return (
-    <div className="flex flex-col items-center justify-center p-6 bg-[#FAFAFA] min-h-full">
-      <div className="max-w-4xl w-full">
-        <h1 className="text-3xl font-medium text-[#111827] mb-4 text-center">Under the Hood</h1>
-        <p className="text-sm text-[#6B7280] text-center mb-12 max-w-xl mx-auto">
-          Lumen relies on a modern, decoupled tech stack designed to handle asynchronous AI workloads, Server-Sent Events, and stateful memory check-pointing.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {stack.map((item, idx) => (
-            <div key={idx} className="bg-white border-custom rounded-xl p-5 hover:shadow-sm transition-all hover:-translate-y-1">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-[#EBF2FF] text-[#1A56DB] flex items-center justify-center">
-                  <i className={`ti ${item.icon}`}></i>
-                </div>
-                <div>
-                  <h3 className="text-[13px] font-medium text-[#111827]">{item.name}</h3>
-                  <p className="text-[10px] uppercase tracking-wider text-[#9CA3AF] font-bold mt-0.5">{item.type}</p>
-                </div>
-              </div>
-              <p className="text-xs text-[#6B7280] leading-relaxed">
-                {item.desc}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-16 bg-white border-custom rounded-xl p-8 text-center max-w-2xl mx-auto">
-          <h2 className="text-lg font-medium text-[#111827] mb-3">Why LangGraph?</h2>
-          <p className="text-xs text-[#6B7280] leading-relaxed mb-6">
-            Traditional AI chains (like standard LangChain) move in a straight line. If they make a mistake, they fail. LangGraph allows Lumen to loop backwards. If the Evaluator node detects hallucination, it literally sends the flow backwards to the Orchestrator to try again!
+    <div className="flex flex-col flex-1 bg-[#000000] items-center py-16 relative overflow-hidden">
+      
+      <div className="w-full max-w-[800px] px-6 relative z-10">
+        
+        {/* Header */}
+        <div className="mb-12">
+          <h1 className="text-[40px] font-bold text-[#EDEDED] mb-4 tracking-tight">Architecture</h1>
+          <p className="text-[16px] text-[#888] leading-relaxed font-light">
+            An overview of the stateful multi-agent system and the technologies powering LUMEN.
           </p>
-          <a href="https://github.com/SanatanSinghVishen/Lumen" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center h-9 px-4 bg-[#111827] text-white text-xs font-medium rounded-lg hover:bg-[#374151] transition-colors">
-            View Source on GitHub
-          </a>
         </div>
+
+        {/* Visual Diagram (Mockup using CSS grid) */}
+        <div className="w-full bg-[#0A0A0A] border border-[#222] rounded-2xl p-8 mb-16 shadow-[0_0_30px_rgba(0,112,243,0.05)]">
+          <div className="text-[11px] font-mono uppercase text-[#555] tracking-widest mb-6">
+            System Topology
+          </div>
+          
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            
+            <div className="flex flex-col gap-3 w-full md:w-1/4">
+              <div className="bg-[#111] border border-[#333] p-3 rounded-lg text-center text-[12px] text-[#EDEDED] font-mono">React Frontend</div>
+              <div className="bg-[#111] border border-[#333] p-3 rounded-lg text-center text-[12px] text-[#EDEDED] font-mono">FastAPI Server</div>
+            </div>
+
+            <div className="text-[#555]">→</div>
+
+            <div className="w-full md:w-1/2 bg-[#000] border border-[#0070F3] border-opacity-50 rounded-xl p-5 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-[#0070F3] opacity-5 group-hover:opacity-10 transition-opacity" />
+              <div className="text-[12px] font-mono text-[#0070F3] mb-4 text-center">LangGraph Orchestrator</div>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-[#111] border border-[#222] p-2 rounded text-center text-[10px] text-[#888]">Tavily Search</div>
+                <div className="bg-[#111] border border-[#222] p-2 rounded text-center text-[10px] text-[#888]">RAG Retrieval</div>
+                <div className="bg-[#111] border border-[#222] p-2 rounded text-center text-[10px] text-[#888]">LLM Synthesis</div>
+                <div className="bg-[#111] border border-[#222] p-2 rounded text-center text-[10px] text-[#888]">RAGAS Eval</div>
+              </div>
+            </div>
+
+            <div className="text-[#555]">→</div>
+
+            <div className="flex flex-col gap-3 w-full md:w-1/4">
+              <div className="bg-[#111] border border-[#333] p-3 rounded-lg text-center text-[12px] text-[#EDEDED] font-mono">Postgres (Memory)</div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Markdown Content */}
+        <div className="prose prose-invert w-full max-w-none text-[15px]">
+          <ReactMarkdown>{ARCHITECTURE_CONTENT}</ReactMarkdown>
+        </div>
+
       </div>
+
     </div>
   );
 }

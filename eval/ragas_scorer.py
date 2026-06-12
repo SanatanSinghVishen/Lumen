@@ -58,14 +58,15 @@ def compute_ragas_scores(
 
         # RAGAS requires a model that natively supports OpenAI-style JSON/tool calling.
         # "owl-alpha" throws 400 on these strict structured requests. 
-        # We use Llama 3.3 70B Instruct Free which supports OpenRouter structured outputs flawlessly.
+        # We use Gemini 2.5 Flash which supports OpenRouter structured outputs flawlessly.
         api_key = os.getenv("OPENROUTER_API_KEY", "")
         ragas_specific_llm = ChatOpenAI(
-            model="meta-llama/llama-3.3-70b-instruct:free", 
+            model="google/gemini-2.5-flash", 
             openai_api_key=api_key, 
             openai_api_base="https://openrouter.ai/api/v1", 
-            max_retries=2, 
-            timeout=45
+            max_retries=10, 
+            timeout=45,
+            max_tokens=4000
         ) if api_key else llm
 
         # RAGAS expects a HuggingFace Dataset with these exact column names
@@ -82,7 +83,7 @@ def compute_ragas_scores(
         ragas_embeddings = LangchainEmbeddingsWrapper(embeddings)
 
         from ragas.run_config import RunConfig
-        run_config = RunConfig(max_workers=1, max_retries=2)
+        run_config = RunConfig(max_workers=2, max_retries=10)
 
         scores = evaluate(
             dataset,

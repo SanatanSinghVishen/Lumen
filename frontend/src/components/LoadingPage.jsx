@@ -3,14 +3,16 @@ import { useNavigate, useParams } from "react-router-dom";
 import ErrorScreen from "../components/ErrorScreen";
 
 const NODE_LABELS = {
-  orchestrator:  { icon: "ti-sitemap",      label: "Decomposing query" },
-  web_search:    { icon: "ti-world-search",  label: "Searching web" },
-  rag_retrieval: { icon: "ti-database",      label: "Retrieving documents" },
-  synthesis:     { icon: "ti-pencil",        label: "Writing report" },
-  ragas_eval:    { icon: "ti-chart-bar",     label: "Scoring quality" },
-  evaluator:     { icon: "ti-brain",         label: "Evaluating" },
-  hitl:          { icon: "ti-user-check",    label: "Awaiting approval" },
+  orchestrator:  { label: "Orchestrator decomposing query", detail: "Breaking into parallel sub-tasks" },
+  web_search:    { label: "Agents searching web", detail: "Scraping Tavily deep-search results" },
+  rag_retrieval: { label: "Agents retrieving context", detail: "Querying ChromaDB vector store" },
+  synthesis:     { label: "Synthesising report", detail: "Streaming LLM draft" },
+  ragas_eval:    { label: "RAGAS evaluation", detail: "Computing faithfulness & relevancy" },
+  evaluator:     { label: "LLM-as-judge scoring", detail: "Final quality checks" },
+  hitl:          { label: "Awaiting approval", detail: "Preparing review panel" },
 };
+
+const NODE_ORDER = Object.keys(NODE_LABELS);
 
 export default function LoadingPage() {
   const { thread_id }       = useParams();
@@ -38,7 +40,6 @@ export default function LoadingPage() {
     es.addEventListener("token", (e) => {
       const { token } = JSON.parse(e.data);
       setTokens(prev => prev + token);
-      // auto-scroll report preview
       if (reportRef.current) {
         reportRef.current.scrollTop = reportRef.current.scrollHeight;
       }
@@ -48,7 +49,7 @@ export default function LoadingPage() {
       const { thread_id: hitl_thread_id } = JSON.parse(e.data);
       es.close();
       navigate(`/review/${hitl_thread_id}`, {
-        state: { prefetchedReport: tokens }  // pass accumulated tokens
+        state: { prefetchedReport: tokens }
       });
     });
 
@@ -72,63 +73,78 @@ export default function LoadingPage() {
     };
 
     return () => es.close();
-  }, [thread_id]);
+  }, [thread_id, activeNode, navigate, tokens]);
 
   if (error) {
     return <ErrorScreen type={error} onRetry={() => navigate("/")} />;
   }
 
   return (
-    <div style={{ maxWidth: "720px", margin: "0 auto", padding: "2rem 1.5rem" }}>
+    <div className="flex flex-col md:flex-row w-full max-w-[1000px] mx-auto p-6 md:p-10 gap-10 mt-10">
+      
+      {/* Left: Vertical Progressive Stepper */}
+      <div className="w-full md:w-1/3 flex flex-col pt-4">
+        <h2 className="text-[11px] font-mono text-[#888] uppercase tracking-widest mb-8">Pipeline Execution</h2>
+        <div className="relative flex flex-col space-y-8 pl-4 border-l border-[#333]">
+          {NODE_ORDER.map((key, idx) => {
+            const isComplete = completedNodes.includes(key) || NODE_ORDER.indexOf(key) < NODE_ORDER.indexOf(activeNode);
+            const isActive   = activeNode === key;
+            const isPending  = !isComplete && !isActive;
 
-      {/* Pipeline node progress strip */}
-      <div style={{ display: "flex", gap: "8px", marginBottom: "2rem", flexWrap: "wrap" }}>
-        {Object.entries(NODE_LABELS).map(([key, { icon, label }]) => {
-          const isComplete = completedNodes.includes(key);
-          const isActive   = activeNode === key;
-          return (
-            <div key={key} style={{
-              display: "flex", alignItems: "center", gap: "6px",
-              padding: "4px 10px", borderRadius: "20px", fontSize: "11px",
-              border: `0.5px solid ${isActive ? "#1A56DB" : isComplete ? "#C0DD97" : "var(--color-border-tertiary)"}`,
-              background: isActive ? "#EBF2FF" : isComplete ? "#EAF3DE" : "var(--color-background-secondary)",
-              color: isActive ? "#1A56DB" : isComplete ? "#3B6D11" : "var(--color-text-secondary)",
-              transition: "all 0.2s ease",
-            }}>
-              <i className={`ti ${isComplete ? "ti-check" : icon}`}
-                 style={{ fontSize: "13px" }} aria-hidden="true" />
-              {label}
-            </div>
-          );
-        })}
+            return (
+              <div key={key} className="relative flex items-start group">
+                {/* Timeline Dot */}
+                <div className={`absolute -left-[21px] w-[10px] h-[10px] rounded-full border-2 bg-[#000] transition-colors duration-300
+                  ${isComplete ? "border-[#0070F3] bg-[#0070F3]" : isActive ? "border-[#0070F3] animate-glow" : "border-[#333]"}`} 
+                />
+                
+                <div className={`flex flex-col -mt-1.5 transition-opacity duration-300 ${isPending ? "opacity-30" : "opacity-100"}`}>
+                  <span className={`text-[14px] font-medium ${isActive ? "text-[#EDEDED]" : isComplete ? "text-[#888]" : "text-[#555]"}`}>
+                    {NODE_LABELS[key].label}
+                  </span>
+                  <span className={`text-[12px] mt-0.5 font-mono ${isActive ? "text-[#0070F3]" : "text-[#555]"}`}>
+                    {isActive ? "Processing..." : isComplete ? "Done" : "Waiting"}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Live report preview */}
-      {tokens && (
-        <div style={{
-          background: "var(--color-background-secondary)",
-          border: "0.5px solid var(--color-border-tertiary)",
-          borderRadius: "12px", padding: "1.25rem",
-          marginBottom: "1rem"
-        }}>
-          <p style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: ".08em", color: "var(--color-text-secondary)", marginBottom: ".75rem" }}>
-            Report preview — generating
-            <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: "#1A56DB", marginLeft: "6px", animation: "pulse 1s infinite" }} />
-          </p>
-          <div
+      {/* Right: Terminal Preview */}
+      <div className="w-full md:w-2/3 flex flex-col">
+        <div className="bg-[#0A0A0A] border border-[#222] rounded-xl overflow-hidden flex flex-col h-[500px] shadow-[0_0_30px_rgba(0,112,243,0.05)] relative">
+          
+          {/* Terminal Header */}
+          <div className="bg-[#111] border-b border-[#222] px-4 py-3 flex items-center justify-between">
+            <div className="flex gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#FF5F56]"></div>
+              <div className="w-3 h-3 rounded-full bg-[#FFBD2E]"></div>
+              <div className="w-3 h-3 rounded-full bg-[#27C93F]"></div>
+            </div>
+            <div className="text-[11px] font-mono text-[#555]">
+              thread_{thread_id.substring(0, 8)}
+            </div>
+          </div>
+
+          {/* Terminal Body */}
+          <div 
             ref={reportRef}
-            style={{ fontSize: "13px", color: "var(--color-text-primary)", lineHeight: 1.7, maxHeight: "400px", overflowY: "auto", whiteSpace: "pre-wrap" }}
+            className="flex-1 p-5 overflow-y-auto font-mono text-[13px] text-[#00ff41] leading-relaxed relative"
           >
-            {tokens}
+            {tokens ? (
+              <span className="whitespace-pre-wrap">{tokens}<span className="animate-blink bg-[#00ff41] inline-block w-2 h-4 ml-1 align-middle"></span></span>
+            ) : (
+              <span className="text-[#555]">Waiting for synthesis stream to begin...</span>
+            )}
+            
+            {/* Overlay Gradient for terminal effect */}
+            <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_100px_rgba(0,0,0,0.5)]" />
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Status message */}
-      <p style={{ fontSize: "13px", color: "var(--color-text-secondary)", textAlign: "center" }}>
-        {NODE_LABELS[activeNode]?.label ?? "Processing..."}
-        {" — your review panel will open automatically"}
-      </p>
     </div>
   );
 }

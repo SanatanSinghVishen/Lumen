@@ -33,23 +33,29 @@ export default function ResultPage() {
   };
 
   if (!data) {
-    return <div className="flex-1 p-6 text-[13px] text-[#6B7280]">Loading...</div>;
+    return <div className="flex-1 p-6 text-[13px] text-[#888]">Loading...</div>;
   }
 
   return (
-    <div className="flex flex-col flex-1 bg-white items-center">
+    <div className="flex flex-col flex-1 bg-[#000000] items-center relative overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute top-[-30%] left-1/2 transform -translate-x-1/2 w-[600px] h-[300px] bg-[#0070F3] opacity-[0.15] blur-[100px] rounded-full pointer-events-none"></div>
+
       {/* Top action bar */}
-      <div className="w-full max-w-4xl flex justify-end items-center py-4 px-6 border-custom border-b border-l-0 border-r-0 border-t-0 mb-8">
+      <div className="w-full max-w-4xl flex justify-between items-center py-5 px-6 border-b border-[#222] mb-12 relative z-10">
+        <div className="text-[#EDEDED] font-mono text-[12px]">
+          Result for <span className="text-[#555]">thread_{thread_id.substring(0,8)}</span>
+        </div>
         <div className="flex space-x-3">
           <button 
             onClick={handleDownload}
-            className="h-8 px-3 bg-white border-custom text-[#111827] text-[12px] font-medium rounded hover:bg-[#F9FAFB]"
+            className="h-9 px-4 bg-[#111] border border-[#333] text-[#EDEDED] text-[12px] font-medium rounded-lg hover:border-[#555] transition-colors"
           >
             Download Markdown ↓
           </button>
           <button 
             onClick={() => navigate("/")}
-            className="h-8 px-3 bg-[#1A56DB] text-white text-[12px] font-medium rounded hover:bg-[#1546b5]"
+            className="h-9 px-4 bg-[#EDEDED] text-[#000] text-[12px] font-bold rounded-lg hover:bg-white transition-colors"
           >
             New Research +
           </button>
@@ -57,8 +63,8 @@ export default function ResultPage() {
       </div>
 
       {/* Report Render */}
-      <div className="w-full max-w-[720px] px-6 pb-20">
-        <div className="prose w-full max-w-none">
+      <div className="w-full max-w-[720px] px-6 pb-24 relative z-10">
+        <div className="prose w-full max-w-none text-[15px] leading-relaxed">
           <ReactMarkdown>{data.final_report || data.draft_report || ""}</ReactMarkdown>
         </div>
       </div>

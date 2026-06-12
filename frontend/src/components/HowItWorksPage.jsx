@@ -1,80 +1,95 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { IconSitemap, IconWorldSearch, IconBrain, IconUserCheck, IconPencil } from "@tabler/icons-react";
 
 export default function HowItWorksPage() {
+  const [activeStep, setActiveStep] = useState(0);
+
   const steps = [
-    {
+    { 
       id: "orchestrator",
-      icon: "ti-sitemap",
-      title: "1. The Orchestrator",
-      desc: "When you ask a complex question, the Orchestrator acts as the brain. It breaks down your large query into 2-4 smaller, highly specific sub-tasks so nothing gets missed."
+      icon: <IconSitemap size={24} stroke={1.5} />, 
+      title: "1. Orchestrator Decomposes", 
+      desc: "When you submit a query, the Orchestrator agent breaks it down into multiple parallel sub-tasks. It figures out exactly what information is needed to answer your complex question."
     },
-    {
+    { 
       id: "search",
-      icon: "ti-world-search",
-      title: "2. Web & Document Search",
-      desc: "Dedicated Search Agents hit the live internet and scan local documents in parallel, gathering raw facts, citations, and context for each of the sub-tasks."
+      icon: <IconWorldSearch size={24} stroke={1.5} />, 
+      title: "2. Web & Document Search", 
+      desc: "Lumen concurrently searches the live internet (via Tavily) and local documents (via ChromaDB) to gather the most relevant and up-to-date context for every sub-task."
     },
-    {
+    { 
       id: "synthesis",
-      icon: "ti-pencil",
-      title: "3. Synthesis",
-      desc: "An AI Writer weaves all the messy, overlapping search results into a clean, comprehensive, and well-structured draft report."
+      icon: <IconPencil size={24} stroke={1.5} />, 
+      title: "3. Synthesis", 
+      desc: "A powerful LLM takes all the retrieved context and synthesizes it into a comprehensive markdown report. It resolves conflicting information and explicitly flags any gaps in the data."
     },
-    {
-      id: "evaluate",
-      icon: "ti-brain",
-      title: "4. Mathematical Evaluation",
-      desc: "Before you even see it, an AI Judge and a strict mathematical framework (RAGAS) score the report. If the report hallucinates or drifts off-topic, it is automatically sent back to be rewritten!"
+    { 
+      id: "evaluator",
+      icon: <IconBrain size={24} stroke={1.5} />, 
+      title: "4. RAGAS Evaluator", 
+      desc: "Before showing you the report, LUMEN grades its own work. It uses RAGAS metrics to calculate Faithfulness (are claims supported?) and Answer Relevancy, ensuring high quality."
     },
-    {
+    { 
       id: "hitl",
-      icon: "ti-user-check",
-      title: "5. Human in the Loop",
-      desc: "The system pauses and hands the draft to you. You can approve it, edit it yourself, or instantly send it back to the AI with notes for a revision."
-    }
+      icon: <IconUserCheck size={24} stroke={1.5} />, 
+      title: "5. Human-in-the-Loop", 
+      desc: "The system pauses and waits for your approval. You can export the finalized report, or type feedback to send the agent back to the drawing board for a revision."
+    },
   ];
 
-  const [activeStep, setActiveStep] = useState(null);
-
   return (
-    <div className="flex flex-col items-center justify-center p-6 bg-[#FAFAFA] min-h-full">
-      <div className="max-w-3xl w-full">
-        <h1 className="text-3xl font-medium text-[#111827] mb-4 text-center">How Lumen Works</h1>
-        <p className="text-sm text-[#6B7280] text-center mb-12 max-w-xl mx-auto">
-          Lumen isn't just a chatbot—it's a multi-agent system. This means multiple AI agents work together in a cycle to research, write, and verify information before it ever reaches you.
+    <div className="flex flex-col flex-1 bg-[#000000] items-center relative overflow-hidden pb-20">
+      
+      {/* Hero Header */}
+      <div className="w-full text-center py-20 px-6 relative z-10">
+        <h1 className="text-[40px] font-bold text-[#EDEDED] mb-4 tracking-tight">How it works</h1>
+        <p className="text-[16px] text-[#888] max-w-[600px] mx-auto leading-relaxed font-light">
+          LUMEN is powered by LangGraph, allowing us to build cyclic, stateful multi-agent workflows. Here is what happens under the hood when you hit enter.
         </p>
+      </div>
 
-        <div className="space-y-4">
-          {steps.map((step, idx) => (
-            <div 
-              key={step.id}
-              className="bg-white border-custom rounded-xl p-5 cursor-pointer transition-all hover:shadow-sm hover:border-[#1A56DB]"
-              onMouseEnter={() => setActiveStep(idx)}
-              onMouseLeave={() => setActiveStep(null)}
-            >
-              <div className="flex items-start space-x-4">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${activeStep === idx ? 'bg-[#1A56DB] text-white' : 'bg-[#F1F5F9] text-[#6B7280]'}`}>
-                  <i className={`ti ${step.icon} text-lg`}></i>
+      {/* Interactive Timeline */}
+      <div className="w-full max-w-[900px] px-6 relative z-10">
+        <div className="flex flex-col md:flex-row gap-12">
+          
+          {/* Left: Step List */}
+          <div className="w-full md:w-1/3 flex flex-col space-y-2">
+            {steps.map((step, idx) => (
+              <button
+                key={step.id}
+                onMouseEnter={() => setActiveStep(idx)}
+                onClick={() => setActiveStep(idx)}
+                className={`flex items-center gap-4 w-full text-left p-4 rounded-xl transition-all duration-300 border ${
+                  activeStep === idx 
+                    ? "bg-[#111] border-[#333] shadow-[0_0_20px_rgba(0,112,243,0.1)] text-[#EDEDED]" 
+                    : "bg-transparent border-transparent text-[#555] hover:bg-[#0A0A0A] hover:text-[#888]"
+                }`}
+              >
+                <div className={`p-2 rounded-lg transition-colors ${
+                  activeStep === idx ? "bg-[#0A0A0A] text-[#0070F3] border border-[#222]" : "bg-transparent text-[#555]"
+                }`}>
+                  {step.icon}
                 </div>
-                <div>
-                  <h3 className={`text-sm font-medium transition-colors ${activeStep === idx ? 'text-[#1A56DB]' : 'text-[#111827]'}`}>
-                    {step.title}
-                  </h3>
-                  <p className="text-xs text-[#6B7280] mt-2 leading-relaxed">
-                    {step.desc}
-                  </p>
-                </div>
+                <span className="text-[14px] font-medium">{step.title}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Right: Step Details */}
+          <div className="w-full md:w-2/3 flex items-center justify-center">
+            <div className="w-full bg-[#0A0A0A] border border-[#222] rounded-2xl p-8 min-h-[300px] flex flex-col justify-center transition-all duration-500" key={activeStep}>
+              <div className="text-[#0070F3] mb-6 p-4 bg-[#111] w-max rounded-xl border border-[#222] shadow-[0_0_15px_rgba(0,112,243,0.15)]">
+                {steps[activeStep].icon}
               </div>
+              <h2 className="text-[24px] font-medium text-[#EDEDED] mb-4">
+                {steps[activeStep].title}
+              </h2>
+              <p className="text-[15px] text-[#888] leading-relaxed font-light">
+                {steps[activeStep].desc}
+              </p>
             </div>
-          ))}
-        </div>
+          </div>
 
-        <div className="mt-12 text-center">
-          <Link to="/" className="inline-flex items-center space-x-2 text-sm text-[#1A56DB] hover:underline font-medium">
-            <span>Try it out yourself</span>
-            <i className="ti ti-arrow-right"></i>
-          </Link>
         </div>
       </div>
     </div>

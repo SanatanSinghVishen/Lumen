@@ -8,9 +8,10 @@ os.makedirs("chroma_db", exist_ok=True)
 
 class DummyEmbeddings:
     def embed_documents(self, texts):
-        return [[0.0] * 768 for _ in texts]
+        # Return 1.0 vectors so cosine similarity doesn't divide by zero
+        return [[1.0] * 768 for _ in texts]
     def embed_query(self, text):
-        return [0.0] * 768
+        return [1.0] * 768
 
 embeddings = DummyEmbeddings()
 

@@ -7,7 +7,7 @@ from eval.judge_prompt import JUDGE_SYSTEM_PROMPT
 from config import OPENROUTER_API_KEY, EVAL_THRESHOLD
 from langsmith import traceable
 
-llm = ChatOpenAI(model="openrouter/owl-alpha", openai_api_key=OPENROUTER_API_KEY, openai_api_base="https://openrouter.ai/api/v1", max_retries=1, timeout=20) if OPENROUTER_API_KEY else None
+llm = ChatOpenAI(model="google/gemini-2.5-flash", openai_api_key=OPENROUTER_API_KEY, openai_api_base="https://openrouter.ai/api/v1", max_retries=1, timeout=20, max_tokens=2000) if OPENROUTER_API_KEY else None
 
 @traceable(name="evaluator-judge", run_type="llm")
 def evaluator_node(state: AgentState) -> dict:

@@ -4,7 +4,7 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from graph.state import AgentState
 from config import OPENROUTER_API_KEY
 
-llm = ChatOpenAI(model="openrouter/owl-alpha", openai_api_key=OPENROUTER_API_KEY, openai_api_base="https://openrouter.ai/api/v1", max_retries=1, timeout=20) if OPENROUTER_API_KEY else None
+llm = ChatOpenAI(model="google/gemini-2.5-flash", openai_api_key=OPENROUTER_API_KEY, openai_api_base="https://openrouter.ai/api/v1", max_retries=1, timeout=20, max_tokens=2000) if OPENROUTER_API_KEY else None
 
 SYSTEM_PROMPT = """You are a research task planner. Given a query and optional retry feedback, decompose the query into 2–4 specific sub-tasks for: (1) web search, (2) document retrieval, (3) synthesis. If retry feedback is provided, adjust the sub-tasks to address the gaps identified.
 Output MUST be a raw JSON array of strings, e.g., ["task 1", "task 2"]. Do not wrap in markdown code blocks."""
