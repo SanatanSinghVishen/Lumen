@@ -70,20 +70,7 @@ workflow.add_conditional_edges(
 
 workflow.add_edge("output", END)
 
-import sys
-from langgraph.checkpoint.redis import RedisSaver
-import redis
+from langgraph.checkpoint.memory import MemorySaver
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
-
-try:
-    # Test connection before initializing
-    client = redis.Redis.from_url(REDIS_URL)
-    client.ping()
-    checkpointer = RedisSaver(redis_client=client)
-    checkpointer.setup()
-except Exception as e:
-    print(f"FATAL: Cannot connect to Redis at {REDIS_URL}. Error: {e}", file=sys.stderr)
-    sys.exit(1)
-
+checkpointer = MemorySaver()
 app_graph = workflow.compile(checkpointer=checkpointer)

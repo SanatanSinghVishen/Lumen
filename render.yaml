@@ -7,8 +7,7 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.12
-      - key: REDIS_URL
-        sync: false
+
       - key: OPENROUTER_API_KEY
         sync: false
       - key: TAVILY_API_KEY
