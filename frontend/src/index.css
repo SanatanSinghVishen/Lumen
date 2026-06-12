@@ -55,6 +55,11 @@ body {
   animation: pulseRing 2s infinite;
 }
 
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
 /* Global layout utility */
 .border-custom {
   border: 0.5px solid var(--color-border);

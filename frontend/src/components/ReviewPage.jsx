@@ -1,13 +1,52 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { API_URL } from "../App";
 import ErrorScreen from "./ErrorScreen";
 
+const MetricRow = ({ label, value, hint }) => {
+  const color = value === null ? "#888"
+    : value >= 0.75 ? "#3B6D11"
+    : value >= 0.60 ? "#854F0B"
+    : "#A32D2D";
+
+  const bg = value === null ? "#F1F5F9"
+    : value >= 0.75 ? "#EAF3DE"
+    : value >= 0.60 ? "#FAEEDA"
+    : "#FCEBEB";
+
+  return (
+    <div style={{ marginBottom: "12px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+        <span style={{ fontSize: "12px", color: "var(--color-text-secondary)" }}>{label}</span>
+        <span style={{
+          fontSize: "12px", fontWeight: 500, padding: "2px 8px",
+          borderRadius: "20px", background: bg, color
+        }}>
+          {value !== null && value !== undefined ? value.toFixed(2) : "n/a"}
+        </span>
+      </div>
+      <div style={{ height: "3px", background: "var(--color-background-secondary)", borderRadius: "2px", overflow: "hidden" }}>
+        <div style={{
+          height: "100%", borderRadius: "2px", background: color,
+          width: value !== null && value !== undefined ? `${value * 100}%` : "0%",
+          transition: "width 0.6s ease"
+        }} />
+      </div>
+      <p style={{ fontSize: "10px", color: "var(--color-text-secondary)", marginTop: "3px" }}>{hint}</p>
+    </div>
+  );
+};
+
 export default function ReviewPage() {
   const { thread_id } = useParams();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
+  const location = useLocation();
+  const [data, setData] = useState(
+    location.state?.prefetchedReport
+      ? { draft_report: location.state.prefetchedReport, status: "awaiting_review" }
+      : null
+  );
   const [submitting, setSubmitting] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedback, setFeedback] = useState("");
@@ -43,7 +82,11 @@ export default function ReviewPage() {
         setError("network_error");
       }
     }
-    fetchReview();
+    
+    // Only fetch from API if we don't have prefetched data
+    if (!location.state?.prefetchedReport) {
+      fetchReview();
+    }
   }, [thread_id]);
 
   const handleAction = async (action) => {
@@ -123,19 +166,35 @@ export default function ReviewPage() {
         <div className="w-full sm:w-[280px] border-custom border-l-0 sm:border-l p-5 sticky top-[113px] h-[calc(100vh-113px)] overflow-y-auto bg-[#F9FAFB] sm:bg-white">
           
           {/* Section 1 - Confidence */}
-          <div className="mb-8">
-            <div className={`text-[24px] font-medium ${progressColor.replace("bg-", "text-")}`}>
-              {score.toFixed(2)}
-            </div>
-            <div className="w-full h-1 bg-[#E5E7EB] mt-2 mb-3 rounded-full overflow-hidden">
-              <div 
-                className={`h-full ${progressColor} transition-all duration-1000 ease-out`} 
-                style={{ width: `${score * 100}%` }}
-              ></div>
-            </div>
-            <p className="text-[11px] text-[#6B7280] leading-relaxed">
-              {score >= 0.75 ? "High confidence. Sources are recent and directly relevant." : "Moderate/Low confidence. Review findings carefully."}
+          <div style={{ marginBottom: "1.25rem" }}>
+            <p style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: ".08em", color: "var(--color-text-secondary)", marginBottom: ".75rem" }}>
+              Evaluation scores
             </p>
+            <MetricRow
+              label="LLM judge"
+              value={data.eval_score}
+              hint="Overall quality scored by the AI evaluator"
+            />
+            <MetricRow
+              label="Faithfulness"
+              value={data.faithfulness}
+              hint="Claims are grounded in retrieved sources"
+            />
+            <MetricRow
+              label="Answer relevancy"
+              value={data.answer_relevancy}
+              hint="Report directly addresses the query"
+            />
+            <MetricRow
+              label="Context precision"
+              value={data.context_precision}
+              hint="Retriever surfaced the most relevant chunks"
+            />
+            {data.ragas_error && (
+              <p style={{ fontSize: "10px", color: "var(--color-text-secondary)", marginTop: "4px" }}>
+                ⚠ RAGAS metrics unavailable: {data.ragas_error}
+              </p>
+            )}
           </div>
 
           {/* Section 2 - Actions */}

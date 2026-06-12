@@ -47,7 +47,62 @@ workflow.add_edge("orchestrator", "rag_agent")
 workflow.add_edge("web_search", "synthesis")
 workflow.add_edge("rag_agent", "synthesis")
 
-workflow.add_edge("synthesis", "evaluator")
+from eval.ragas_scorer import compute_ragas_scores
+from graph.nodes.evaluator import llm
+from tools.vector_retrieval import embeddings
+import logging
+
+logger = logging.getLogger("lumen.ragas")
+
+async def ragas_eval_node(state: AgentState) -> AgentState:
+    """
+    Computes RAGAS metrics for the current draft.
+    Never blocks the pipeline — if RAGAS fails, scores are None
+    and the pipeline continues to the LLM judge as normal.
+    """
+    try:
+        contexts = [r["content"] for r in state.get("rag_results", [])] \
+                 + [r["content"] for r in state.get("web_results", [])]
+
+        if not contexts:
+            logger.warning("RAGAS node: no contexts available — skipping")
+            return {
+                **state,
+                "faithfulness":      None,
+                "answer_relevancy":  None,
+                "context_precision": None,
+                "ragas_error":       "no_contexts",
+            }
+
+        scores = compute_ragas_scores(
+            query=state["query"],
+            answer=state.get("draft_report") or state.get("merged_context", ""),
+            contexts=contexts,
+            llm=llm,
+            embeddings=embeddings
+        )
+
+        return {
+            **state,
+            "faithfulness":      scores["faithfulness"],
+            "answer_relevancy":  scores["answer_relevancy"],
+            "context_precision": scores["context_precision"],
+            "ragas_error":       scores["error"],
+        }
+
+    except Exception as e:
+        logger.warning("RAGAS node crashed — %s", str(e))
+        return {
+            **state,
+            "faithfulness":      None,
+            "answer_relevancy":  None,
+            "context_precision": None,
+            "ragas_error":       str(e),
+        }
+
+workflow.add_node("ragas_eval", ragas_eval_node)
+workflow.add_edge("synthesis", "ragas_eval")
+workflow.add_edge("ragas_eval", "evaluator")
 
 # Conditional Edge for Evaluator
 workflow.add_conditional_edges(
@@ -70,7 +125,6 @@ workflow.add_conditional_edges(
 
 workflow.add_edge("output", END)
 
-from langgraph.checkpoint.memory import MemorySaver
-
-checkpointer = MemorySaver()
-app_graph = workflow.compile(checkpointer=checkpointer)
+def build_graph(checkpointer):
+    from langgraph.graph import StateGraph
+    return workflow.compile(checkpointer=checkpointer)

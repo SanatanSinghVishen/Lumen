@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Literal
+from typing import List, Dict, Any, Literal, Optional
 from typing_extensions import TypedDict
 
 class AgentState(TypedDict):
@@ -15,3 +15,9 @@ class AgentState(TypedDict):
     human_edits: str
     final_report: str
     thread_id: str
+    
+    # RAGAS fields
+    faithfulness: Optional[float]
+    answer_relevancy: Optional[float]
+    context_precision: Optional[float]
+    ragas_error: Optional[str]

@@ -13,3 +13,14 @@ slowapi
 weasyprint
 python-dotenv
 langsmith>=0.1.0
+
+# Prompt 1: Postgres
+langgraph-checkpoint-postgres>=2.0.0
+psycopg[binary,pool]>=3.1.0
+
+# Prompt 2: RAGAS
+ragas>=0.1.0
+datasets>=2.0.0
+
+# Prompt 3: SSE Streaming
+sse-starlette>=1.6.0
