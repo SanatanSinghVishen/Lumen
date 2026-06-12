@@ -1,15 +1,33 @@
 import json
+import os
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from graph.state import AgentState
 from eval.judge_prompt import JUDGE_SYSTEM_PROMPT
 from config import OPENROUTER_API_KEY, EVAL_THRESHOLD
 
-from langsmith import traceable
+# Read from the environment variable set by main.py
+LANGSMITH_ENABLED = os.environ.get("LANGCHAIN_TRACING_V2", "false").lower() == "true"
+
+def safe_traceable(**kwargs):
+    """
+    Applies @traceable only when LangSmith is enabled.
+    Falls back to a no-op wrapper when it's not.
+    Never raises.
+    """
+    def decorator(fn):
+        if not LANGSMITH_ENABLED:
+            return fn  # no-op — return the function unchanged
+        try:
+            from langsmith import traceable
+            return traceable(**kwargs)(fn)
+        except Exception:
+            return fn  # if traceable itself fails, still return the function
+    return decorator
 
 llm = ChatOpenAI(model="openrouter/owl-alpha", openai_api_key=OPENROUTER_API_KEY, openai_api_base="https://openrouter.ai/api/v1", max_retries=1) if OPENROUTER_API_KEY else None
 
-@traceable(name="evaluator-judge", run_type="llm")
+@safe_traceable(name="evaluator-judge", run_type="llm")
 def evaluator_node(state: AgentState) -> dict:
     draft = state.get("merged_context", "")
     query = state.get("query", "")
