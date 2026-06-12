@@ -21,6 +21,7 @@ psycopg[binary,pool]>=3.1.0
 # Prompt 2: RAGAS
 ragas>=0.1.0
 datasets>=2.0.0
+langchain-community
 
 # Prompt 3: SSE Streaming
 sse-starlette>=1.6.0
