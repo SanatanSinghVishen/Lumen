@@ -7,7 +7,7 @@ from config import OPENROUTER_API_KEY, EVAL_THRESHOLD
 
 from langsmith import traceable
 
-llm = ChatOpenAI(model="meta-llama/llama-3-8b-instruct:free", openai_api_key=OPENROUTER_API_KEY, openai_api_base="https://openrouter.ai/api/v1", max_retries=1) if OPENROUTER_API_KEY else None
+llm = ChatOpenAI(model="google/gemini-2.0-flash-lite-preview-02-05:free", openai_api_key=OPENROUTER_API_KEY, openai_api_base="https://openrouter.ai/api/v1", max_retries=1) if OPENROUTER_API_KEY else None
 
 @traceable(name="evaluator-judge", run_type="llm")
 def evaluator_node(state: AgentState) -> dict:
