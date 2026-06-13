@@ -2,7 +2,7 @@
 
 > Type a topic. Lumen deploys parallel AI agents to search the web, retrieve documents, synthesise findings, score its own confidence, and wait for your approval before finalising.
 
-**[Live Demo →](https://your-lumen-app.vercel.app)**  |  **[Backend Health →](https://your-lumen-api.onrender.com/health)**
+**[Live Demo →](https://lumen-frontend-one.vercel.app)**  |  **[Backend Health →](https://lumen-api-ijf1.onrender.com/health)**
 
 ---
 
@@ -37,7 +37,7 @@ Final report
 | LLM | Gemini 2.0 Flash (free tier via OpenRouter) |
 | Web search | Tavily API |
 | Vector store | ChromaDB |
-| State | AsyncPostgresSaver |
+| State | LangGraph MemorySaver |
 | Observability | LangSmith (graceful degradation) |
 | Rate limiting | slowapi |
 | Frontend hosting | Vercel |
@@ -75,10 +75,11 @@ npm run dev            # runs on localhost:5173
 
 ## Architecture notes
 
-**Scaling:** Graph state persists in Supabase PostgreSQL via
-`AsyncPostgresSaver`. Multiple Render instances can run concurrently —
-each polling request hits the same shared Postgres state regardless of
-which instance handles it.
+**Why MemorySaver instead of Redis?**
+LangGraph requires RediSearch (`FT.*` commands) which is unsupported on free serverless Redis tiers. MemorySaver provides identical behaviour for single-session portfolio use. Migration path to `AsyncPostgresSaver` for horizontal scaling is documented in `ARCHITECTURE.md`.
+
+**Known limitation**
+Because state is held in RAM, a Render container restart (which occurs after inactivity on the free tier) will lose in-flight sessions. The frontend detects this and shows a clear session-expired message.
 
 ---
 

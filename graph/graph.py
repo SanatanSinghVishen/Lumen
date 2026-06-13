@@ -48,8 +48,6 @@ workflow.add_edge("web_search", "synthesis")
 workflow.add_edge("rag_agent", "synthesis")
 
 from eval.ragas_scorer import compute_ragas_scores
-from graph.nodes.evaluator import llm
-from tools.vector_retrieval import embeddings
 import logging
 
 logger = logging.getLogger("lumen.ragas")
@@ -61,8 +59,16 @@ async def ragas_eval_node(state: AgentState) -> AgentState:
     and the pipeline continues to the LLM judge as normal.
     """
     try:
-        contexts = [r["content"] for r in state.get("rag_results", [])] \
-                 + [r["content"] for r in state.get("web_results", [])]
+        # Tavily results use "content" or "snippet" depending on version/mode
+        # RAG results always use "content"
+        raw_contexts = [
+            r.get("content", r.get("snippet", ""))
+            for r in state.get("rag_results", [])
+        ] + [
+            r.get("content", r.get("snippet", ""))
+            for r in state.get("web_results", [])
+        ]
+        contexts = [c for c in raw_contexts if c and c.strip()]
 
         if not contexts:
             logger.warning("RAGAS node: no contexts available — skipping")
@@ -77,11 +83,9 @@ async def ragas_eval_node(state: AgentState) -> AgentState:
         import asyncio
         scores = await asyncio.to_thread(
             compute_ragas_scores,
-            state["query"],
-            state.get("draft_report") or state.get("merged_context", ""),
-            contexts,
-            llm,
-            embeddings
+            query=state["query"],
+            answer=state.get("draft_report") or state.get("merged_context", ""),
+            contexts=contexts,
         )
 
         return {

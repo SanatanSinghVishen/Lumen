@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import Layout from "./components/Layout";
 import LandingPage from "./components/LandingPage";
 import LoadingPage from "./components/LoadingPage";
@@ -9,10 +10,12 @@ import ArchitecturePage from "./components/ArchitecturePage";
 
 export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-function App() {
+function AnimatedRoutes() {
+  const location = useLocation();
+  
   return (
-    <Router>
-      <Routes>
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
         <Route element={<Layout />}>
           <Route path="/" element={<LandingPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
@@ -22,6 +25,14 @@ function App() {
           <Route path="/result/:thread_id" element={<ResultPage />} />
         </Route>
       </Routes>
+    </AnimatePresence>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AnimatedRoutes />
     </Router>
   );
 }

@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Request
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Request, UploadFile, File
 from sse_starlette.sse import EventSourceResponse
 import asyncio
 import json
@@ -84,35 +84,70 @@ async def approve_draft(thread_id: str, request: ApproveRequest, background_task
 async def stream_thread(thread_id: str, request: Request):
     """
     Streams LangGraph node events for a given thread as SSE.
-
-    Event types emitted:
-      - "status"   : pipeline stage updates (e.g. "Searching the web...")
-      - "token"    : individual LLM tokens from the synthesis node
-      - "scores"   : eval scores once the evaluator node completes
-      - "hitl"     : signals the graph has paused for human review
-      - "error"    : any pipeline error
-      - "done"     : graph has reached END
     """
     from main import app_graph
     import logging
+    import json
+    
     logger = logging.getLogger("lumen")
+    diag_logger = logging.getLogger("lumen.stream_diag")
+    diag_logger.setLevel(logging.DEBUG)
+    sse_logger = logging.getLogger("lumen.sse_wire")
+    sse_logger.setLevel(logging.DEBUG)
     
     config = {"configurable": {"thread_id": thread_id}}
 
     async def event_generator():
+        event_count = 0
+        _chunk_inspection_count = 0
+        
         try:
             async for event in app_graph.astream_events(
                 None,           # input is None because graph is already running
                 config=config,
                 version="v2",   # use v2 event schema
             ):
-                # Check client disconnected
+                event_count += 1
                 if await request.is_disconnected():
                     break
 
-                kind  = event.get("event")
+                kind  = event.get("event", "")
                 name  = event.get("name", "")
                 data  = event.get("data", {})
+
+                # ── DIAGNOSTIC: Chunk Inspection ───────────────────────────
+                if kind == "on_chat_model_stream":
+                    chunk = data.get("chunk")
+                    if chunk:
+                        content = getattr(chunk, "content", None)
+                        
+                        # Log raw event lengths
+                        diag_logger.debug(
+                            "EVENT #%d | kind=%s | name=%s | content_type=%s | content_len=%s | content_repr=%r",
+                            event_count, kind, name, type(content).__name__,
+                            len(content) if isinstance(content, str) else "N/A",
+                            content[:80] if isinstance(content, str) else content,
+                        )
+                        
+                        # Deep inspect first 3 chunks
+                        if _chunk_inspection_count < 3:
+                            _chunk_inspection_count += 1
+                            diag_logger.debug(
+                                "CHUNK INSPECTION #%d:\n"
+                                "  type(chunk)         = %s\n"
+                                "  chunk.__dict__      = %s\n"
+                                "  chunk.content       = %r\n"
+                                "  type(chunk.content) = %s\n"
+                                "  chunk.content is list? %s\n"
+                                "  full event keys     = %s",
+                                _chunk_inspection_count,
+                                type(chunk).__name__,
+                                getattr(chunk, "__dict__", "no __dict__"),
+                                getattr(chunk, "content", "NO CONTENT ATTR"),
+                                type(getattr(chunk, "content", None)).__name__,
+                                isinstance(getattr(chunk, "content", None), list),
+                                list(event.keys()),
+                            )
 
                 # ── Node started — emit status update ──────────────────
                 if kind == "on_chain_start":
@@ -138,9 +173,15 @@ async def stream_thread(thread_id: str, request: Request):
                 elif kind == "on_chat_model_stream" and "synthesis_llm" in event.get("tags", []):
                     chunk = data.get("chunk")
                     if chunk and hasattr(chunk, "content") and chunk.content:
+                        token_payload = json.dumps({"token": chunk.content})
+                        sse_logger.debug(
+                            "SSE YIELD | event=token | payload_len=%d | payload=%r",
+                            len(token_payload),
+                            token_payload[:120],
+                        )
                         yield {
                             "event": "token",
-                            "data": json.dumps({"token": chunk.content})
+                            "data": token_payload
                         }
 
                 # ── Evaluator node finished — emit all scores ──────────
@@ -165,6 +206,7 @@ async def stream_thread(thread_id: str, request: Request):
                     }
                     break   # stop streaming — user must now review
 
+            diag_logger.debug("Stream complete — total events processed: %d", event_count)
             yield {"event": "done", "data": json.dumps({"thread_id": thread_id})}
 
         except Exception as e:
@@ -175,3 +217,56 @@ async def stream_thread(thread_id: str, request: Request):
             }
 
     return EventSourceResponse(event_generator())
+
+
+# ── RAG Document Management ─────────────────────────────────────────────────
+
+@router.post("/upload")
+async def upload_document(file: UploadFile = File(...)):
+    """
+    Upload a document (PDF, TXT, MD, CSV) to the RAG vector store.
+    The file is chunked, embedded, and stored in ChromaDB.
+    Re-uploading the same filename replaces the old chunks.
+    """
+    from tools.vector_retrieval import ingest_file
+
+    filename = file.filename
+    content_bytes = await file.read()
+
+    # Parse based on file type
+    if filename.lower().endswith(".pdf"):
+        try:
+            from pypdf import PdfReader
+            import io
+            reader = PdfReader(io.BytesIO(content_bytes))
+            text = "\n\n".join(page.extract_text() or "" for page in reader.pages)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to parse PDF: {str(e)}")
+    elif filename.lower().endswith((".txt", ".md", ".csv")):
+        text = content_bytes.decode("utf-8", errors="replace")
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported file type. Upload .txt, .md, .csv, or .pdf files."
+        )
+
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="File is empty or could not be parsed.")
+
+    result = ingest_file(filename, text)
+    return result
+
+
+@router.get("/documents")
+async def list_documents():
+    """List all documents currently stored in the RAG vector store."""
+    from tools.vector_retrieval import list_documents as _list_docs
+    return {"documents": _list_docs(), "total": len(_list_docs())}
+
+
+@router.delete("/documents")
+async def clear_documents():
+    """Delete all documents from the RAG vector store."""
+    from tools.vector_retrieval import delete_collection
+    delete_collection()
+    return {"status": "cleared"}

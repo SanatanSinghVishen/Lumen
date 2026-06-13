@@ -1,28 +1,43 @@
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from graph.state import AgentState
-from config import OPENROUTER_API_KEY
+from llm import get_streaming_llm
 
-llm = ChatOpenAI(model="google/gemini-2.5-flash", openai_api_key=OPENROUTER_API_KEY, openai_api_base="https://openrouter.ai/api/v1", max_retries=1, timeout=45, streaming=True, max_tokens=8000) if OPENROUTER_API_KEY else None
+llm = get_streaming_llm()
 
-SYSTEM_PROMPT = """You are a research synthesiser. Given web search results and document retrieval results, produce a unified context block. 
+SYSTEM_PROMPT = """You are a research synthesiser. Given web search results and document retrieval results, write a comprehensive research report.
 You must: 
 (1) merge overlapping information
 (2) explicitly flag any contradictions between sources with a [CONFLICT] marker
 (3) note any topic gaps with a [GAP] marker
-(4) cite each claim with its source (url or filename+page). 
+(4) cite each claim with its source (url or filename). 
 Output as structured Markdown."""
 
 from langchain_core.runnables import RunnableConfig
 
 async def synthesis_node(state: AgentState, config: RunnableConfig) -> dict:
-    if not llm:
-        raise ValueError("OpenRouter API key is missing. Please configure OPENROUTER_API_KEY.")
-        
     web_res = state.get("web_results", [])
     rag_res = state.get("rag_results", [])
     
-    content = f"WEB RESULTS:\n{web_res}\n\nDOCUMENT RESULTS:\n{rag_res}"
+    # ── Context trimming ───────────────────────────────────────────────
+    # Groq free tier: 12,000 TPM. We must keep input under ~8K tokens
+    # (~32K chars) to leave room for system prompt + output tokens.
+    # Strategy: top 3 results per source, each truncated to 1500 chars.
+    MAX_RESULTS = 3
+    MAX_CHARS_PER_RESULT = 1500
+    
+    def trim(text: str) -> str:
+        return text[:MAX_CHARS_PER_RESULT] + "..." if len(text) > MAX_CHARS_PER_RESULT else text
+    
+    web_text = "\n\n".join([
+        f"Source: {r.get('url', 'Web')}\nContent: {trim(r.get('content', r.get('snippet', '')))}"
+        for r in web_res[:MAX_RESULTS]
+    ])
+    rag_text = "\n\n".join([
+        f"Source: {r.get('source', 'Document')}\nContent: {trim(r.get('content', ''))}"
+        for r in rag_res[:MAX_RESULTS]
+    ])
+    
+    content = f"WEB RESULTS:\n{web_text}\n\nDOCUMENT RESULTS:\n{rag_text}"
     
     messages = [
         SystemMessage(content=SYSTEM_PROMPT),

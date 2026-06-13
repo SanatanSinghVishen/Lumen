@@ -1,7 +1,7 @@
 """
 ragas_scorer.py
 ───────────────
-Computes three RAGAS metrics for a completed research draft.
+Computes RAGAS metrics for a completed research draft.
 Designed to fail gracefully — if RAGAS errors for any reason,
 it returns None scores and logs the error. It must never crash
 the agent pipeline.
@@ -13,6 +13,7 @@ Metrics:
 """
 
 import logging
+import time
 from typing import Optional
 
 logger = logging.getLogger("lumen.ragas")
@@ -22,14 +23,15 @@ def compute_ragas_scores(
     query: str,
     answer: str,
     contexts: list[str],
-    llm,            # pass your existing ChatGoogleGenerativeAI instance
-    embeddings,     # pass your existing embeddings instance
 ) -> dict:
     """
     Returns a dict with keys:
         faithfulness, answer_relevancy, context_precision, error
     All float fields are between 0.0 and 1.0.
     Any field can be None if scoring failed.
+
+    LLM and embeddings are handled internally — no external
+    dependencies need to be passed in.
     """
     result = {
         "faithfulness":      None,
@@ -53,44 +55,47 @@ def compute_ragas_scores(
         from ragas.llms import LangchainLLMWrapper
         from ragas.embeddings import LangchainEmbeddingsWrapper
         from datasets import Dataset
-        from langchain_openai import ChatOpenAI
-        import os
 
-        # RAGAS requires a model that natively supports OpenAI-style JSON/tool calling.
-        # "owl-alpha" throws 400 on these strict structured requests. 
-        # We use Gemini 2.5 Flash which supports OpenRouter structured outputs flawlessly.
-        api_key = os.getenv("OPENROUTER_API_KEY", "")
-        ragas_specific_llm = ChatOpenAI(
-            model="google/gemini-2.5-flash", 
-            openai_api_key=api_key, 
-            openai_api_base="https://openrouter.ai/api/v1", 
-            max_retries=10, 
-            timeout=45,
-            max_tokens=4000
-        ) if api_key else llm
+        # Rate limit protection — serialize RAGAS calls
+        # RAGAS fires multiple LLM calls per metric; this prevents
+        # smashing the 30 RPM Groq ceiling
+        time.sleep(2)
+
+        # Use only top 3 contexts to minimise LLM calls
+        # (3 contexts × 2 metrics = ~6 LLM calls instead of 30+)
+        trimmed_contexts = contexts[:3]
+
+        from llm import get_evaluator_llm
+        ragas_llm = LangchainLLMWrapper(get_evaluator_llm())
+
+        # Use a local embedding model for RAGAS
+        # HuggingFace sentence-transformers runs locally — no API calls
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+        ragas_embeddings = LangchainEmbeddingsWrapper(embeddings)
 
         # RAGAS expects a HuggingFace Dataset with these exact column names
         data = {
             "question":  [query],
             "answer":    [answer],
-            "contexts":  [contexts],   # list of retrieved chunk strings
-            # reference is optional — omit for Answer Relevancy and Faithfulness
+            "contexts":  [trimmed_contexts],
         }
         dataset = Dataset.from_dict(data)
-
-        # Wrap LangChain LLM and embeddings for RAGAS
-        ragas_llm        = LangchainLLMWrapper(ragas_specific_llm)
-        ragas_embeddings = LangchainEmbeddingsWrapper(embeddings)
 
         from ragas.run_config import RunConfig
         run_config = RunConfig(max_workers=2, max_retries=10)
 
+        # Explicitly bind LLM and embeddings to metrics to fix AssertionError in newer ragas versions
+        faithfulness.llm = ragas_llm
+        answer_relevancy.llm = ragas_llm
+        answer_relevancy.embeddings = ragas_embeddings
+
         scores = evaluate(
             dataset,
             metrics=[faithfulness, answer_relevancy],
-            llm=ragas_llm,
-            embeddings=ragas_embeddings,
-            raise_exceptions=False,   # never crash — return NaN instead
+            raise_exceptions=False,
             run_config=run_config,
         )
 

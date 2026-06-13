@@ -3,26 +3,30 @@ uvicorn
 langgraph
 langchain
 langchain-openai
+langchain-text-splitters
 langchain-chroma
 chromadb
-tavily-python
 
-streamlit
+tavily-python
+tenacity
 pydantic
 slowapi
-weasyprint
 python-dotenv
 langsmith>=0.1.0
+python-multipart
 
-# Prompt 1: Postgres
+# PDF parsing for RAG uploads
+pypdf
+
+# Postgres checkpointer
 langgraph-checkpoint-postgres>=2.0.0
 psycopg[binary,pool]>=3.1.0
 
-# Prompt 2: RAGAS
+# RAGAS evaluation
 ragas>=0.1.0
 datasets>=2.0.0
 langchain-community
-langchain-google-vertexai
+sentence-transformers>=2.2.0
 
-# Prompt 3: SSE Streaming
+# SSE Streaming
 sse-starlette>=1.6.0

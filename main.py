@@ -28,28 +28,30 @@ async def lifespan(app):
     if postgres_url:
         try:
             from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-            checkpointer = AsyncPostgresSaver.from_conn_string(postgres_url)
-            await checkpointer.setup()   # creates the checkpoint tables if they don't exist
-            logger.info("Checkpointer: AsyncPostgresSaver connected to Supabase")
+            # AsyncPostgresSaver.from_conn_string returns an async context manager
+            async with AsyncPostgresSaver.from_conn_string(postgres_url) as cp:
+                checkpointer = cp
+                await checkpointer.setup()   # creates the checkpoint tables if they don't exist
+                logger.info("Checkpointer: AsyncPostgresSaver connected to Supabase")
+                
+                app_graph = build_graph(checkpointer)
+                logger.info("LangGraph: graph compiled with %s", type(checkpointer).__name__)
+                
+                yield  # app runs here
+                
+                logger.info("Checkpointer: Postgres connection closed")
+            return  # Lifespan completed successfully with Postgres
         except Exception as e:
             logger.warning("Checkpointer: Postgres failed (%s) — falling back to MemorySaver", e)
-            from langgraph.checkpoint.memory import MemorySaver
-            checkpointer = MemorySaver()
-    else:
-        logger.info("Checkpointer: FORCED MemorySaver for debugging")
-        from langgraph.checkpoint.memory import MemorySaver
-        checkpointer = MemorySaver()
-
-    # Recompile the graph with the chosen checkpointer
+            
+    # Fallback path if no Postgres URL or if connection failed
+    logger.info("Checkpointer: Using MemorySaver")
+    from langgraph.checkpoint.memory import MemorySaver
+    checkpointer = MemorySaver()
     app_graph = build_graph(checkpointer)
     logger.info("LangGraph: graph compiled with %s", type(checkpointer).__name__)
 
     yield  # app runs here
-
-    # Cleanup on shutdown
-    if hasattr(checkpointer, "conn") and checkpointer.conn:
-        await checkpointer.conn.close()
-        logger.info("Checkpointer: Postgres connection closed")
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -82,6 +84,8 @@ app.include_router(router)
 async def health():
     return {
         "status": "ok",
+        "llm_provider": "openrouter",
+        "llm_model": "google/gemini-2.5-flash",
         "checkpointer": type(checkpointer).__name__,
         "langsmith_tracing": LANGSMITH_ENABLED,
         "cors_origin": os.getenv("FRONTEND_URL", "not set"),

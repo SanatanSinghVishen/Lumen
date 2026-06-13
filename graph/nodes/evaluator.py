@@ -1,13 +1,13 @@
 import json
 import os
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from graph.state import AgentState
 from eval.judge_prompt import JUDGE_SYSTEM_PROMPT
-from config import OPENROUTER_API_KEY, EVAL_THRESHOLD
+from config import EVAL_THRESHOLD
 from langsmith import traceable
+from llm import get_evaluator_llm
 
-llm = ChatOpenAI(model="google/gemini-2.5-flash", openai_api_key=OPENROUTER_API_KEY, openai_api_base="https://openrouter.ai/api/v1", max_retries=1, timeout=20, max_tokens=2000) if OPENROUTER_API_KEY else None
+llm = get_evaluator_llm()
 
 @traceable(name="evaluator-judge", run_type="llm")
 def evaluator_node(state: AgentState) -> dict:
@@ -15,14 +15,6 @@ def evaluator_node(state: AgentState) -> dict:
     query = state.get("query", "")
     current_retry = state.get("retry_count", 0)
     
-    if not llm:
-        return {
-            "draft_report": draft, 
-            "eval_score": 1.0, 
-            "eval_feedback": "Skipped evaluation.",
-            "retry_count": current_retry
-        }
-        
     content = f"ORIGINAL QUERY: {query}\n\nDRAFT ANSWER:\n{draft}"
     
     messages = [
@@ -42,9 +34,10 @@ def evaluator_node(state: AgentState) -> dict:
         score = result.get("overall_score", 0.0)
         feedback = result.get("feedback", "No feedback provided.")
     except Exception as e:
-        # If the API key is invalid, don't trigger the 3x retry loop which wastes 3 minutes
-        score = 1.0
-        feedback = f"Failed to parse evaluation because your OpenRouter API key is likely invalid or unauthorized. Error: {str(e)}"
+        # Failed evaluation → low score → triggers retry or human review
+        # NEVER return 1.0 here — that silently approves a potentially bad report
+        score = 0.0
+        feedback = f"Evaluation failed: {str(e)}. Report will be sent for human review."
         
     return {
         "draft_report": draft,
