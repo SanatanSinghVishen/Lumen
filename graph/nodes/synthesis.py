@@ -52,5 +52,8 @@ async def synthesis_node(state: AgentState, config: RunnableConfig) -> dict:
             content += chunk.content
     except Exception as e:
         raise RuntimeError(f"Synthesis LLM failed: {str(e)}")
+        
+    import gc
+    gc.collect()
     
     return {"merged_context": content}

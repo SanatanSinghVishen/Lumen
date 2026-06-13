@@ -81,6 +81,7 @@ def ingest_file(filename: str, content: str) -> dict:
     # Process in small batches to prevent OOM crashes on the Render free tier
     # ONNX runtime allocates massive memory if it tries to embed 100+ chunks at once
     batch_size = 20
+    import gc
     for i in range(0, len(chunks), batch_size):
         batch_chunks = chunks[i:i + batch_size]
         batch_ids = ids[i:i + batch_size]
@@ -91,6 +92,9 @@ def ingest_file(filename: str, content: str) -> dict:
             ids=batch_ids,
             metadatas=batch_metas,
         )
+        
+        # Force garbage collection to free ONNX runtime tensors immediately
+        gc.collect()
 
     logger.info("Ingested %d chunks from '%s'", len(chunks), filename)
     return {"filename": filename, "chunks": len(chunks), "status": "success"}

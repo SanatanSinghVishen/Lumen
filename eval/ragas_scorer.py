@@ -116,6 +116,13 @@ def compute_ragas_scores(
             result["answer_relevancy"],
             result["context_precision"],
         )
+        
+        # Force cleanup of PyArrow memory structures
+        del dataset
+        del scores
+        df = None
+        import gc
+        gc.collect()
 
     except Exception as e:
         logger.warning("RAGAS scoring failed — %s", str(e))

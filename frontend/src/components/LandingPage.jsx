@@ -137,6 +137,8 @@ export default function LandingPage() {
       setSubmitting(false);
     }
   };
+
+  const steps = [
     { num: "01", icon: <IconSitemap size={20} stroke={1.5} />, label: "Orchestrator decomposes", desc: "Breaks your query into parallel sub-tasks" },
     { num: "02", icon: <IconWorldSearch size={20} stroke={1.5} />, label: "Agents retrieve", desc: "Searches the web & your uploaded documents" },
     { num: "03", icon: <IconBrain size={20} stroke={1.5} />, label: "Dual evaluation", desc: "RAGAS metrics + LLM-as-judge scoring" },

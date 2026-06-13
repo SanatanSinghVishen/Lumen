@@ -1,4 +1,15 @@
 import os
+
+# ── AGGRESSIVE MEMORY OPTIMIZATION FOR 512MB RENDER LIMIT ────────────────
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+# Force PyArrow (used by datasets/ragas) to use system allocator instead of hoarding a memory pool
+os.environ["ARROW_DEFAULT_MEMORY_POOL"] = "system"
+
 import logging
 from contextlib import asynccontextmanager
 from graph.graph import build_graph
