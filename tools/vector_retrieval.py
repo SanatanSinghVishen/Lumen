@@ -47,7 +47,7 @@ class ChromaEmbeddings:
     """Wraps ChromaDB's DefaultEmbeddingFunction so RAGAS can use it."""
 
     def __init__(self):
-        self._ef = DefaultEmbeddingFunction()
+        self._ef = default_ef
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         return self._ef(texts)

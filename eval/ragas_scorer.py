@@ -68,12 +68,9 @@ def compute_ragas_scores(
         from llm import get_evaluator_llm
         ragas_llm = LangchainLLMWrapper(get_evaluator_llm())
 
-        # Use a local embedding model for RAGAS
-        # HuggingFace sentence-transformers runs locally — no API calls
-        from langchain_community.embeddings import HuggingFaceEmbeddings
-        embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
+        # Use the existing ChromaDB ONNX embeddings instead of loading PyTorch models into RAM
+        # This prevents Out Of Memory (OOM) crashes on the Render free tier
+        from tools.vector_retrieval import embeddings
         ragas_embeddings = LangchainEmbeddingsWrapper(embeddings)
 
         # RAGAS expects a HuggingFace Dataset with these exact column names
