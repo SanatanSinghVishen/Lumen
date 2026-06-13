@@ -78,11 +78,19 @@ def ingest_file(filename: str, content: str) -> dict:
     ids = [f"{filename}::chunk_{i}" for i in range(len(chunks))]
     metadatas = [{"source": filename, "chunk_index": i} for i in range(len(chunks))]
 
-    collection.add(
-        documents=chunks,
-        ids=ids,
-        metadatas=metadatas,
-    )
+    # Process in small batches to prevent OOM crashes on the Render free tier
+    # ONNX runtime allocates massive memory if it tries to embed 100+ chunks at once
+    batch_size = 20
+    for i in range(0, len(chunks), batch_size):
+        batch_chunks = chunks[i:i + batch_size]
+        batch_ids = ids[i:i + batch_size]
+        batch_metas = metadatas[i:i + batch_size]
+        
+        collection.add(
+            documents=batch_chunks,
+            ids=batch_ids,
+            metadatas=batch_metas,
+        )
 
     logger.info("Ingested %d chunks from '%s'", len(chunks), filename)
     return {"filename": filename, "chunks": len(chunks), "status": "success"}
