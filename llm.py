@@ -57,5 +57,5 @@ def get_streaming_llm():
     # But still bounded — prevents infinite hang
 
 def get_evaluator_llm():
-    return get_llm(temperature=0.0, max_tokens=8192, timeout=20)
-    # Fail fast — evaluator outputs JSON scores, but RAGAS context might be large
+    return get_llm(temperature=0.0, max_tokens=8192, timeout=90)
+    # RAGAS context windows are large and generation can take 30-60s.
