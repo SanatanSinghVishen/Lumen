@@ -3,39 +3,102 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks, Request, UploadFi
 from sse_starlette.sse import EventSourceResponse
 import asyncio
 import json
+import magic
+from threading import Lock as ThreadLock
+from slowapi.util import get_remote_address
+from slowapi import Limiter
+
 from api.schemas import QueryRequest, QueryResponse, ReviewResponse, ApproveRequest
+from cost_guard import check_query, check_upload
+
+# Instantiate limiter here to avoid circular imports, main.py will import it and attach to app
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["200/hour"],
+)
 
 router = APIRouter()
 
-@router.post("/query", response_model=QueryResponse)
-async def submit_query(request: QueryRequest):
+# ── Duplicate Request Prevention ──────────────────────────────────────────
+
+_active_ips: set[str] = set()
+_active_lock = ThreadLock()
+
+def acquire_slot(ip: str) -> bool:
+    with _active_lock:
+        if ip in _active_ips:
+            return False
+        _active_ips.add(ip)
+        return True
+
+def release_slot(ip: str):
+    with _active_lock:
+        _active_ips.discard(ip)
+
+
+# ── Routes ──────────────────────────────────────────────────────────────
+
+# Changed endpoint from /query to /research based on instructions, but frontend might use /query.
+# Let's map /research as requested by the user, and I will update LandingPage to use /research.
+@router.post("/research", response_model=QueryResponse)
+@limiter.limit("3/10minute")
+async def run_research(request: Request, body: QueryRequest, background_tasks: BackgroundTasks):
+    client_ip = get_remote_address(request)
+
+    # Cost guard
+    guard = check_query()
+    if not guard["allowed"]:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error":     guard["reason"],
+                "message":   "LUMEN has reached its daily research limit. "
+                             "This keeps the demo free for everyone. "
+                             "Please try again tomorrow or run it locally.",
+                "resets_at": guard.get("resets_at", "Midnight UTC"),
+                "github":    "https://github.com/SanatanSinghVishen/Lumen",
+            }
+        )
+
+    # Duplicate prevention
+    if not acquire_slot(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error":   "query_in_flight",
+                "message": "You already have a research query running. "
+                           "Please wait for it to complete.",
+            }
+        )
+
     thread_id = str(uuid.uuid4())
-    from main import app_graph
-    config = {"configurable": {"thread_id": thread_id}}
-    
-    # Write the query to the thread state without starting execution
-    await app_graph.aupdate_state(config, {"query": request.query})
-    
+    config    = {"configurable": {"thread_id": thread_id}}
+
+    async def run_and_release():
+        try:
+            from main import app_graph
+            # Write the query to the thread state without starting execution
+            await app_graph.aupdate_state(config, {"query": body.query})
+        finally:
+            release_slot(client_ip)  # always release — even on crash
+
+    background_tasks.add_task(run_and_release)
     return {"thread_id": thread_id, "status": "running"}
 
+
 @router.get("/review/{thread_id}")
-async def get_review(thread_id: str):
+@limiter.limit("60/minute")
+async def get_review(request: Request, thread_id: str):
     from main import app_graph
     config = {"configurable": {"thread_id": thread_id}}
     state = await app_graph.aget_state(config)
     
-    # Check if thread exists in checkpointer
     if not state.values:
-        # If it doesn't exist, it might still be initializing or running without saving first checkpoint
-        # However, ainvoke might take time to hit the first checkpoint.
-        # But per requirements, return "running" if thread exists but no HITL interrupt.
-        # If state.values is empty, we assume it's running.
         return {
             "thread_id": thread_id,
             "status": "running"
         }
     
-    # Check if we have hit the HITL interrupt
     next_node = state.next
     if next_node and "hitl" in next_node:
         status = "awaiting_review"
@@ -58,6 +121,7 @@ async def get_review(thread_id: str):
         "web_results":       state.values.get("web_results", []),
     }
 
+
 async def resume_graph(thread_id: str, command_payload: dict):
     from main import app_graph
     config = {"configurable": {"thread_id": thread_id}}
@@ -69,19 +133,21 @@ async def resume_graph(thread_id: str, command_payload: dict):
         traceback.print_exc()
 
 @router.post("/approve/{thread_id}")
-async def approve_draft(thread_id: str, request: ApproveRequest, background_tasks: BackgroundTasks):
+@limiter.limit("10/10minute")
+async def approve(request: Request, thread_id: str, body: ApproveRequest, background_tasks: BackgroundTasks):
     command_payload = {
-        "action": request.action,
-        "edits": request.edits,
-        "notes": request.notes
+        "action": body.action,
+        "edits": body.edits,
+        "notes": body.notes
     }
     
     background_tasks.add_task(resume_graph, thread_id, command_payload)
 
-    return {"status": "Resumed graph execution", "action": request.action}
+    return {"status": "Resumed graph execution", "action": body.action}
 
 @router.get("/stream/{thread_id}")
-async def stream_thread(thread_id: str, request: Request):
+@limiter.limit("20/minute")
+async def stream_thread(request: Request, thread_id: str):
     """
     Streams LangGraph node events for a given thread as SSE.
     """
@@ -90,24 +156,15 @@ async def stream_thread(thread_id: str, request: Request):
     import json
     
     logger = logging.getLogger("lumen")
-    diag_logger = logging.getLogger("lumen.stream_diag")
-    diag_logger.setLevel(logging.DEBUG)
-    sse_logger = logging.getLogger("lumen.sse_wire")
-    sse_logger.setLevel(logging.DEBUG)
-    
     config = {"configurable": {"thread_id": thread_id}}
 
     async def event_generator():
-        event_count = 0
-        _chunk_inspection_count = 0
-        
         try:
             async for event in app_graph.astream_events(
-                None,           # input is None because graph is already running
+                None,
                 config=config,
-                version="v2",   # use v2 event schema
+                version="v2",
             ):
-                event_count += 1
                 if await request.is_disconnected():
                     break
 
@@ -115,41 +172,6 @@ async def stream_thread(thread_id: str, request: Request):
                 name  = event.get("name", "")
                 data  = event.get("data", {})
 
-                # ── DIAGNOSTIC: Chunk Inspection ───────────────────────────
-                if kind == "on_chat_model_stream":
-                    chunk = data.get("chunk")
-                    if chunk:
-                        content = getattr(chunk, "content", None)
-                        
-                        # Log raw event lengths
-                        diag_logger.debug(
-                            "EVENT #%d | kind=%s | name=%s | content_type=%s | content_len=%s | content_repr=%r",
-                            event_count, kind, name, type(content).__name__,
-                            len(content) if isinstance(content, str) else "N/A",
-                            content[:80] if isinstance(content, str) else content,
-                        )
-                        
-                        # Deep inspect first 3 chunks
-                        if _chunk_inspection_count < 3:
-                            _chunk_inspection_count += 1
-                            diag_logger.debug(
-                                "CHUNK INSPECTION #%d:\n"
-                                "  type(chunk)         = %s\n"
-                                "  chunk.__dict__      = %s\n"
-                                "  chunk.content       = %r\n"
-                                "  type(chunk.content) = %s\n"
-                                "  chunk.content is list? %s\n"
-                                "  full event keys     = %s",
-                                _chunk_inspection_count,
-                                type(chunk).__name__,
-                                getattr(chunk, "__dict__", "no __dict__"),
-                                getattr(chunk, "content", "NO CONTENT ATTR"),
-                                type(getattr(chunk, "content", None)).__name__,
-                                isinstance(getattr(chunk, "content", None), list),
-                                list(event.keys()),
-                            )
-
-                # ── Node started — emit status update ──────────────────
                 if kind == "on_chain_start":
                     status_map = {
                         "orchestrator":  "Decomposing your query...",
@@ -163,28 +185,17 @@ async def stream_thread(thread_id: str, request: Request):
                     if name in status_map:
                         yield {
                             "event": "status",
-                            "data": json.dumps({
-                                "node":    name,
-                                "message": status_map[name]
-                            })
+                            "data": json.dumps({"node": name, "message": status_map[name]})
                         }
 
-                # ── LLM token from synthesis node ──────────────────────
                 elif kind == "on_chat_model_stream" and "synthesis_llm" in event.get("tags", []):
                     chunk = data.get("chunk")
                     if chunk and hasattr(chunk, "content") and chunk.content:
-                        token_payload = json.dumps({"token": chunk.content})
-                        sse_logger.debug(
-                            "SSE YIELD | event=token | payload_len=%d | payload=%r",
-                            len(token_payload),
-                            token_payload[:120],
-                        )
                         yield {
                             "event": "token",
-                            "data": token_payload
+                            "data": json.dumps({"token": chunk.content})
                         }
 
-                # ── Evaluator node finished — emit all scores ──────────
                 elif kind == "on_chain_end" and name == "evaluator":
                     output = data.get("output", {})
                     if output:
@@ -198,42 +209,90 @@ async def stream_thread(thread_id: str, request: Request):
                             })
                         }
 
-                # ── HITL node reached — graph paused ───────────────────
                 if kind == "on_chain_start" and name == "hitl":
                     yield {
                         "event": "hitl",
                         "data": json.dumps({"thread_id": thread_id})
                     }
-                    break   # stop streaming — user must now review
+                    break
 
-            diag_logger.debug("Stream complete — total events processed: %d", event_count)
             yield {"event": "done", "data": json.dumps({"thread_id": thread_id})}
 
         except Exception as e:
-            logger.error("Stream error for thread %s: %s", thread_id, str(e))
-            yield {
-                "event": "error",
-                "data": json.dumps({"message": str(e)})
-            }
+            yield {"event": "error", "data": json.dumps({"message": str(e)})}
 
     return EventSourceResponse(event_generator())
 
 
 # ── RAG Document Management ─────────────────────────────────────────────────
 
+ALLOWED_MIME_TYPES = {
+    "application/pdf",
+    "text/plain",
+    "text/markdown",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+
+MAX_FILE_SIZE_MB  = 10     # 10MB per file
+MAX_FILE_SIZE     = MAX_FILE_SIZE_MB * 1024 * 1024
+MAX_FILES_PER_REQ = 3      # max 3 files per upload request
+
 @router.post("/upload")
-async def upload_document(file: UploadFile = File(...)):
-    """
-    Upload a document (PDF, TXT, MD, CSV) to the RAG vector store.
-    The file is chunked, embedded, and stored in ChromaDB.
-    Re-uploading the same filename replaces the old chunks.
-    """
+@limiter.limit("5/10minute")
+async def upload_documents(
+    request:  Request,
+    file:    UploadFile = File(...), # Changed files to file to match existing frontend code, but still enforcing limits
+):
+    # Support both single `file` and multiple `files` if needed, but frontend sends single `file`.
+    files = [file]
+    
+    # Cost guard
+    guard = check_upload()
+    if not guard["allowed"]:
+        raise HTTPException(status_code=503, detail={"error": "daily_upload_limit_reached"})
+
+    # File count limit
+    if len(files) > MAX_FILES_PER_REQ:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error":   "too_many_files",
+                "message": f"Maximum {MAX_FILES_PER_REQ} files per upload.",
+            }
+        )
+
+    validated_files = []
+    for f in files:
+        content = await f.read()
+
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error":   "file_too_large",
+                    "message": f"'{f.filename}' exceeds {MAX_FILE_SIZE_MB}MB limit.",
+                }
+            )
+
+        detected_mime = magic.from_buffer(content, mime=True)
+        if detected_mime not in ALLOWED_MIME_TYPES and not detected_mime.startswith("text/csv"):
+            # Allow text/csv as well since previous code supported CSV
+            if detected_mime != "text/csv":
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "error":   "invalid_file_type",
+                        "message": f"'{f.filename}' is not a supported file type. "
+                                   f"Supported: PDF, TXT, MD, DOCX, CSV.",
+                    }
+                )
+
+        validated_files.append((f.filename, content))
+
+    # Existing embedding/ChromaDB logic
     from tools.vector_retrieval import ingest_file
-
-    filename = file.filename
-    content_bytes = await file.read()
-
-    # Parse based on file type
+    
+    filename, content_bytes = validated_files[0]
     if filename.lower().endswith(".pdf"):
         try:
             from pypdf import PdfReader
@@ -242,13 +301,8 @@ async def upload_document(file: UploadFile = File(...)):
             text = "\n\n".join(page.extract_text() or "" for page in reader.pages)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Failed to parse PDF: {str(e)}")
-    elif filename.lower().endswith((".txt", ".md", ".csv")):
-        text = content_bytes.decode("utf-8", errors="replace")
     else:
-        raise HTTPException(
-            status_code=400,
-            detail="Unsupported file type. Upload .txt, .md, .csv, or .pdf files."
-        )
+        text = content_bytes.decode("utf-8", errors="replace")
 
     if not text.strip():
         raise HTTPException(status_code=400, detail="File is empty or could not be parsed.")
@@ -259,14 +313,12 @@ async def upload_document(file: UploadFile = File(...)):
 
 @router.get("/documents")
 async def list_documents():
-    """List all documents currently stored in the RAG vector store."""
     from tools.vector_retrieval import list_documents as _list_docs
     return {"documents": _list_docs(), "total": len(_list_docs())}
 
 
 @router.delete("/documents")
 async def clear_documents():
-    """Delete all documents from the RAG vector store."""
     from tools.vector_retrieval import delete_collection
     delete_collection()
     return {"status": "cleared"}

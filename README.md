@@ -212,6 +212,7 @@ Lumen/
 - **Node.js 18+**
 - **An OpenRouter API key** (free at [openrouter.ai/keys](https://openrouter.ai/keys))
 - **A Tavily API key** (free at [tavily.com](https://tavily.com) — 1,000 searches/month)
+- **libmagic1** (Linux only, for file type validation: `sudo apt-get install libmagic1`)
 
 ### 1. Clone the repo
 

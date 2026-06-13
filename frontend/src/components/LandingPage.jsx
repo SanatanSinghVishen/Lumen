@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { IconSitemap, IconWorldSearch, IconBrain, IconUserCheck, IconSearch, IconArrowRight, IconUpload, IconFile, IconCheck, IconX, IconTrash } from "@tabler/icons-react";
 import { API_URL } from "../App";
+import ErrorScreen from "./ErrorScreen";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeUp, staggerContainer, staggerItem, scaleIn } from "../utils/motionVariants";
 
@@ -91,25 +92,51 @@ export default function LandingPage() {
     if (file) handleUpload(file);
   };
 
+  const [error, setError] = useState(null);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    if (!query.trim() || query.length < 10) {
+      setError("invalid_input");
+      return;
+    }
+
     setSubmitting(true);
+    setError(null);
+
     try {
-      const res = await fetch(`${API_URL}/query`, {
-        method: "POST",
+      const res = await fetch(`${API_URL}/research`, {
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
+        body:    JSON.stringify({ query: query.trim() }),
       });
-      const data = await res.json();
-      navigate(`/loading/${data.thread_id}`);
-    } catch (err) {
-      console.error(err);
+
+      if (res.ok) {
+        const { thread_id } = await res.json();
+        navigate(`/loading/${thread_id}`);
+        return;
+      }
+
+      // Map error responses to ErrorScreen types
+      const body = await res.json().catch(() => ({}));
+      const errorCode = body?.detail?.error || body?.error || "pipeline_failed";
+
+      const errorMap = {
+        daily_limit_reached:        "daily_limit_reached",
+        daily_upload_limit_reached: "daily_upload_limit_reached",
+        query_in_flight:            "query_in_flight",
+        rate_limit_exceeded:        "rate_limited",
+        invalid_input:              "invalid_input",
+      };
+
+      setError(errorMap[errorCode] || "pipeline_failed");
+
+    } catch {
+      setError("network_error");
+    } finally {
       setSubmitting(false);
     }
   };
-
-  const steps = [
     { num: "01", icon: <IconSitemap size={20} stroke={1.5} />, label: "Orchestrator decomposes", desc: "Breaks your query into parallel sub-tasks" },
     { num: "02", icon: <IconWorldSearch size={20} stroke={1.5} />, label: "Agents retrieve", desc: "Searches the web & your uploaded documents" },
     { num: "03", icon: <IconBrain size={20} stroke={1.5} />, label: "Dual evaluation", desc: "RAGAS metrics + LLM-as-judge scoring" },
@@ -121,6 +148,10 @@ export default function LandingPage() {
     "Breakthroughs in LLM reasoning and planning in 2025",
     "How does RAG compare to fine-tuning for enterprise knowledge bases?",
   ];
+
+  if (error) {
+    return <ErrorScreen type={error} onRetry={() => setError(null)} />;
+  }
 
   return (
     <motion.div 

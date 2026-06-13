@@ -1,13 +1,14 @@
-import { IconClockOff, IconRobotOff, IconWifiOff } from "@tabler/icons-react";
+import { IconClockOff, IconRobotOff, IconWifiOff, IconMoon, IconLoader2, IconHourglass, IconAlertTriangle, IconFileX, IconCloudOff } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 
 const ERROR_MESSAGES = {
+  // ── existing ─────────────────────────────────────────────────────
   session_expired: {
     icon: <IconClockOff size={48} stroke={1.5} className="text-gemini-cyan" />,
     title: "Session expired",
     body: "Lumen runs on Render's free tier, which restarts the server after periods of inactivity. Your research session was lost in the restart.",
     action: "Start a new query",
-    hint: "This is a known infrastructure tradeoff — see the architecture docs for details.",
+    hint: "Sessions persist in Postgres mode — run locally for uninterrupted sessions.",
   },
   pipeline_failed: {
     icon: <IconRobotOff size={48} stroke={1.5} className="text-gemini-pink" />,
@@ -21,7 +22,51 @@ const ERROR_MESSAGES = {
     title: "Connection lost",
     body: "Could not reach the Lumen backend. The server may be spinning up from a cold start — this takes 30–60 seconds on Render's free tier.",
     action: "Try again",
-    hint: "If the problem persists, check that the backend is live at /health",
+    hint: null,
+  },
+
+  // ── new protection errors ─────────────────────────────────────────
+  daily_limit_reached: {
+    icon: <IconMoon size={48} stroke={1.5} className="text-gemini-purple" />,
+    title: "Daily limit reached",
+    body: "LUMEN processes a limited number of research queries per day to keep the demo free and available for everyone. The limit resets at midnight UTC.",
+    action: "Come back tomorrow",
+    hint: "Want unlimited access? Clone the repo and run it locally with your own API key — full instructions on GitHub.",
+  },
+  query_in_flight: {
+    icon: <IconLoader2 size={48} stroke={1.5} className="text-gemini-blue animate-spin" />,
+    title: "Query already running",
+    body: "You already have a research query in progress. Please wait for it to complete before starting a new one.",
+    action: "Go back",
+    hint: null,
+  },
+  rate_limited: {
+    icon: <IconHourglass size={48} stroke={1.5} className="text-amber-400" />,
+    title: "Slow down a little",
+    body: "You've sent a lot of requests in a short time. Wait a moment and try again — this limit exists to keep the demo fair for everyone.",
+    action: "Try again in 60 seconds",
+    hint: null,
+  },
+  invalid_input: {
+    icon: <IconAlertTriangle size={48} stroke={1.5} className="text-red-400" />,
+    title: "Invalid query",
+    body: "Your query couldn't be processed. Make sure it's a genuine research topic between 10 and 500 characters.",
+    action: "Try a different query",
+    hint: null,
+  },
+  file_too_large: {
+    icon: <IconFileX size={48} stroke={1.5} className="text-red-400" />,
+    title: "File too large",
+    body: "Uploaded files must be under 10MB. Try compressing the PDF or splitting it into smaller files.",
+    action: "Try a smaller file",
+    hint: null,
+  },
+  daily_upload_limit_reached: {
+    icon: <IconCloudOff size={48} stroke={1.5} className="text-gemini-purple" />,
+    title: "Upload limit reached",
+    body: "The daily file upload limit has been reached. This resets at midnight UTC.",
+    action: "Come back tomorrow",
+    hint: null,
   },
 };
 
@@ -54,9 +99,11 @@ export default function ErrorScreen({ type, onRetry }) {
           {err.action} →
         </motion.button>
         
-        <div className="mt-8 pt-6 border-t border-[rgba(255,255,255,0.05)] w-full">
-          <p className="text-[12px] text-textMuted/70 leading-relaxed font-mono">{err.hint}</p>
-        </div>
+        {err.hint && (
+          <div className="mt-8 pt-6 border-t border-[rgba(255,255,255,0.05)] w-full">
+            <p className="text-[12px] text-textMuted/70 leading-relaxed font-mono">{err.hint}</p>
+          </div>
+        )}
       </motion.div>
     </div>
   );

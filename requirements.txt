@@ -29,3 +29,6 @@ langchain-community
 
 # SSE Streaming
 sse-starlette>=1.6.0
+
+# Abuse Protection
+python-magic>=0.4.27

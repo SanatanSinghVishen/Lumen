@@ -18,7 +18,6 @@ logger = logging.getLogger("lumen.llm")
 MODEL = "google/gemini-2.5-flash"
 BASE_URL = "https://openrouter.ai/api/v1"
 
-
 def _get_api_key() -> str:
     key = os.getenv("OPENROUTER_API_KEY", "").strip()
     if not key:
@@ -28,77 +27,35 @@ def _get_api_key() -> str:
         )
     return key
 
-
-def get_llm(
-    max_tokens:  int   = 8192,
-    timeout:     int   = 60,
-    streaming:   bool  = False,
-):
-    """
-    Returns a ChatOpenAI instance pointed at OpenRouter.
-    Uses provider defaults for temperature/top_p to avoid repetition loops.
-    """
-    from langchain_openai import ChatOpenAI
-
+def get_llm(temperature=0.1, max_tokens=4096, timeout=45, streaming=False):
+    from langchain_openai import ChatOpenAI  # OpenRouter uses OpenAI-compatible API
+    
     llm = ChatOpenAI(
         model=MODEL,
-        api_key=_get_api_key(),
-        base_url=BASE_URL,
+        openai_api_key=_get_api_key(),
+        openai_api_base=BASE_URL,
+        temperature=temperature,
         max_tokens=max_tokens,
         timeout=timeout,
+        max_retries=1 if not streaming else 0, # DO NOT retry streaming
         streaming=streaming,
-        max_retries=3,
         default_headers={
-            "HTTP-Referer": "http://localhost:3000",
-            "X-Title": "Lumen AI",
+            "HTTP-Referer":  "https://lumen-frontend-one.vercel.app",
+            "X-Title":       "LUMEN Research Agent",
         }
     )
-    logger.info("LLM initialised: %s (streaming=%s)", MODEL, streaming)
+    logger.info("LLM initialised: %s (streaming=%s, timeout=%s)", MODEL, streaming, timeout)
     return llm
-
-
-def get_streaming_llm():
-    """
-    Returns an LLM instance configured for token streaming.
-    Used exclusively by the synthesis node for SSE token emission.
-    """
-    from langchain_openai import ChatOpenAI
-
-    llm = ChatOpenAI(
-        model=MODEL,
-        api_key=_get_api_key(),
-        base_url=BASE_URL,
-        max_tokens=8192,
-        timeout=90,
-        streaming=True,
-        max_retries=0,  # CRITICAL: Do not retry streaming, otherwise it restarts the text output!
-        default_headers={
-            "HTTP-Referer": "http://localhost:3000",
-            "X-Title": "Lumen AI",
-        }
-    )
-    logger.info("LLM initialised: %s (streaming=True)", MODEL)
-    return llm
-
-
-def get_evaluator_llm():
-    """
-    Returns an LLM instance configured for the evaluator/judge node.
-    """
-    return get_llm(
-        max_tokens=8192, # Increased from 1024 to prevent RAGAS LLMDidNotFinishException
-        timeout=60,
-        streaming=False,
-    )
-
 
 def get_orchestrator_llm():
-    """
-    Returns an LLM instance for the orchestrator node.
-    Needs reliable JSON output for task decomposition.
-    """
-    return get_llm(
-        max_tokens=4096,
-        timeout=60,
-        streaming=False,
-    )
+    return get_llm(temperature=0.0, max_tokens=1024, timeout=20)
+    # Short timeout — orchestrator only outputs JSON task lists
+
+def get_streaming_llm():
+    return get_llm(temperature=0.2, max_tokens=6000, timeout=90, streaming=True)
+    # Longer timeout for synthesis — streaming long reports takes time
+    # But still bounded — prevents infinite hang
+
+def get_evaluator_llm():
+    return get_llm(temperature=0.0, max_tokens=8192, timeout=20)
+    # Fail fast — evaluator outputs JSON scores, but RAGAS context might be large
