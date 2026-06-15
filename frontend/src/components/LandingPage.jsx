@@ -299,6 +299,65 @@ export default function LandingPage() {
               </motion.button>
             </div>
           </motion.div>
+
+          {/* Minimal Document Upload & List */}
+          <div className="w-full flex items-center justify-between gap-2 mt-4 px-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.txt,.md,.csv"
+                className="hidden"
+                onChange={(e) => handleUpload(e.target.files[0])}
+              />
+              <motion.button 
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => fileInputRef.current?.click()}
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-medium transition-colors border
+                  ${uploading ? "opacity-50 cursor-not-allowed border-transparent bg-[rgba(255,255,255,0.05)] text-textMuted" 
+                    : "border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] text-textMuted hover:text-text hover:bg-[rgba(255,255,255,0.08)]"}`}
+              >
+                <IconUpload size={14} stroke={2} /> 
+                {uploading ? "Uploading..." : "Attach Docs"}
+              </motion.button>
+              
+              {/* List uploaded docs as small badges */}
+              {uploadedDocs.map((doc, idx) => (
+                <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] bg-gemini-blue/10 border border-gemini-blue/20 text-gemini-blue max-w-[160px]">
+                  <IconFile size={12} className="shrink-0" />
+                  <span className="truncate">{doc.filename}</span>
+                </div>
+              ))}
+            </div>
+
+            {uploadedDocs.length > 0 && (
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={handleClearDocs}
+                className="text-textMuted hover:text-gemini-pink p-1.5 rounded-full hover:bg-[rgba(255,255,255,0.05)] transition-colors shrink-0"
+                title="Clear all documents"
+              >
+                <IconTrash size={14} />
+              </motion.button>
+            )}
+          </div>
+          
+          <AnimatePresence>
+            {uploadStatus && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className={`text-[12px] px-3 mt-3 text-left ${uploadStatus.type === "success" ? "text-green-400" : "text-red-400"}`}
+              >
+                {uploadStatus.message}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.form>
 
         <motion.div variants={staggerItem} className="flex gap-3 flex-wrap justify-center mb-8">
@@ -316,112 +375,7 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* Document Upload Section */}
-      <motion.section variants={fadeUp} className="w-full py-12 px-6 relative z-10 border-t border-[rgba(255,255,255,0.05)]">
-        <div className="max-w-[640px] mx-auto glass-card p-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-[16px] font-medium text-text mb-1">Knowledge Base</h2>
-              <p className="text-[12px] text-textMuted">Upload documents for RAG retrieval alongside web search</p>
-            </div>
-            <AnimatePresence>
-              {uploadedDocs.length > 0 && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleClearDocs}
-                  className="text-[12px] px-3 py-1.5 glass-pill text-gemini-pink hover:bg-gemini-pink/10 flex items-center gap-1.5 transition-colors"
-                >
-                  <IconTrash size={14} stroke={1.5} /> Clear all
-                </motion.button>
-              )}
-            </AnimatePresence>
-          </div>
 
-          {/* Drop Zone */}
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            animate={dragOver ? {
-              boxShadow: ["0 0 0px rgba(66,133,244,0.1)", "0 0 20px rgba(66,133,244,0.3)", "0 0 0px rgba(66,133,244,0.1)"],
-              transition: { repeat: Infinity, duration: 1.5 }
-            } : {
-              boxShadow: "0 0 0px rgba(66,133,244,0)"
-            }}
-            className={`w-full border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300
-              ${dragOver 
-                ? "border-gemini-blue bg-gemini-blue/10" 
-                : "border-[rgba(255,255,255,0.2)] bg-transparent hover:border-gemini-blue/50 hover:bg-[rgba(255,255,255,0.02)]"
-              } ${uploading ? "opacity-50 pointer-events-none" : ""}`}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.txt,.md,.csv"
-              className="hidden"
-              onChange={(e) => handleUpload(e.target.files[0])}
-            />
-            <IconUpload size={32} stroke={1.5} className={`mx-auto mb-3 transition-colors ${dragOver ? "text-gemini-blue" : "text-textMuted"}`} />
-            <p className="text-[14px] text-text mb-1">
-              {uploading ? "Chunking & embedding..." : "Drop a file here or click to browse"}
-            </p>
-            <p className="text-[12px] text-textMuted/70 font-mono">PDF · TXT · MD · CSV</p>
-          </motion.div>
-
-          {/* Upload Status */}
-          <AnimatePresence>
-            {uploadStatus && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className={`mt-4 flex items-center gap-2 text-[13px] px-4 py-3 glass-pill
-                ${uploadStatus.type === "success" 
-                  ? "text-green-400 border-green-400/30 bg-green-400/10" 
-                  : "text-red-400 border-red-400/30 bg-red-400/10"}`}
-              >
-                {uploadStatus.type === "success" ? <IconCheck size={16} /> : <IconX size={16} />}
-                {uploadStatus.message}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Uploaded Files List */}
-          <AnimatePresence>
-            {uploadedDocs.length > 0 && (
-              <motion.div 
-                variants={staggerContainer}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="mt-6 space-y-2"
-              >
-                {uploadedDocs.map((doc, idx) => (
-                  <motion.div 
-                    variants={scaleIn}
-                    key={idx} 
-                    className="flex items-center justify-between px-4 py-3 glass-panel hover:bg-[rgba(255,255,255,0.05)] transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <IconFile size={18} stroke={1.5} className="text-gemini-blue" />
-                      <span className="text-[14px] text-text">{doc.filename}</span>
-                    </div>
-                    <span className="text-[12px] font-mono text-textMuted px-2 py-1 bg-black/30 rounded-md border border-[rgba(255,255,255,0.05)]">
-                      {doc.chunks} chunks
-                    </span>
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </motion.section>
 
       {/* Animated Pipeline Strip */}
       <motion.section variants={fadeUp} className="w-full py-16 px-6 relative z-10">

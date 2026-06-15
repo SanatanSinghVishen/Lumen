@@ -94,22 +94,19 @@ body {
 
 /* ── Nav Pill Styling ─────────────────────────────────────── */
 .nav-pill {
-  padding: 8px 20px;
+  padding: 8px 16px;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  background: transparent;
   color: #f8fafc;
   font-weight: 500;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .nav-pill:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 /* ── Glassmorphism Utilities ───────────────────────────────── */
