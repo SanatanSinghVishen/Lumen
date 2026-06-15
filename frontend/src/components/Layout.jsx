@@ -17,14 +17,14 @@ export default function Layout() {
           transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
         />
 
-        {/* Floating Glass Navbar */}
-        <motion.nav 
-          initial={{ y: -50, x: "-50%", opacity: 0 }}
-          animate={{ y: 0, x: "-50%", opacity: 1 }}
+        {/* Header Navigation */}
+        <motion.header 
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-          className="fixed top-6 left-1/2 w-[90%] max-w-4xl glass-pill z-50 px-6 h-14 flex items-center justify-between shadow-lg"
+          className="fixed top-0 left-0 w-full z-50 px-8 py-6 flex items-center justify-between pointer-events-none"
         >
-          <div className="flex items-center space-x-3 group cursor-pointer">
+          <div className="flex items-center space-x-3 group cursor-pointer pointer-events-auto">
             <motion.div 
               whileHover={{ scale: 1.2 }}
               className="w-2.5 h-2.5 rounded-full bg-gemini-blue shadow-[0_0_10px_rgba(66,133,244,0.8)] group-hover:animate-pulse" 
@@ -33,30 +33,18 @@ export default function Layout() {
               LUMEN
             </Link>
           </div>
-          <div className="flex items-center space-x-6 text-sm text-textMuted">
-            <Link to="/how-it-works" className="hover:text-text transition-colors relative group">
+          <nav className="flex items-center space-x-2 text-sm pointer-events-auto">
+            <Link to="/how-it-works" className="nav-pill">
               How it works
-              {location.pathname === "/how-it-works" && (
-                <motion.span layoutId="nav-underline" className="absolute -bottom-1 left-0 w-full h-[1px] bg-gemini-blue" />
-              )}
-              {location.pathname !== "/how-it-works" && (
-                <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-gradient-to-r from-gemini-blue to-gemini-purple transition-all group-hover:w-full" />
-              )}
             </Link>
-            <Link to="/architecture" className="hover:text-text transition-colors relative group">
+            <Link to="/architecture" className="nav-pill">
               Architecture
-              {location.pathname === "/architecture" && (
-                <motion.span layoutId="nav-underline" className="absolute -bottom-1 left-0 w-full h-[1px] bg-gemini-purple" />
-              )}
-              {location.pathname !== "/architecture" && (
-                <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-gradient-to-r from-gemini-blue to-gemini-purple transition-all group-hover:w-full" />
-              )}
             </Link>
-            <a href="https://github.com/SanatanSinghVishen/Lumen" target="_blank" rel="noopener noreferrer" className="hover:text-text transition-colors flex items-center group">
-              GitHub <span className="opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-1 transition-all text-gemini-blue">↗</span>
+            <a href="https://github.com/SanatanSinghVishen/Lumen" target="_blank" rel="noopener noreferrer" className="nav-pill flex items-center group">
+              GitHub <span className="opacity-0 w-0 group-hover:w-auto group-hover:opacity-100 group-hover:ml-1 transition-all text-gemini-blue overflow-hidden">↗</span>
             </a>
-          </div>
-        </motion.nav>
+          </nav>
+        </motion.header>
 
         {/* Main Content Area */}
         <main className="flex-1 flex flex-col pt-28 pb-10">
