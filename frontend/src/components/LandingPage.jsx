@@ -13,6 +13,10 @@ export default function LandingPage() {
   const [isInputFocused, setIsInputFocused] = useState(false);
   const navigate = useNavigate();
 
+  // Animation states
+  const [placeholderText, setPlaceholderText] = useState("");
+  const [headingWord, setHeadingWord] = useState("Research");
+
   // RAG Upload state
   const [uploadedDocs, setUploadedDocs] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -44,6 +48,54 @@ export default function LandingPage() {
       // Backend might not be ready yet
     }
   };
+
+  useEffect(() => {
+    const placeholders = [
+      "Latest breakthroughs in quantum error correction...",
+      "Compare LangGraph and AutoGen for AI agents...",
+      "How does RAG compare to fine-tuning...",
+      "What are the implications of AGI in 2026..."
+    ];
+    let currentIdx = 0;
+    let currentText = "";
+    let isDeleting = false;
+    let timeout;
+    
+    const type = () => {
+      const fullText = placeholders[currentIdx];
+      
+      if (isDeleting) {
+        currentText = fullText.substring(0, currentText.length - 1);
+      } else {
+        currentText = fullText.substring(0, currentText.length + 1);
+      }
+      
+      setPlaceholderText(currentText);
+      
+      let typeSpeed = isDeleting ? 20 : 50;
+      
+      if (!isDeleting && currentText === fullText) {
+        typeSpeed = 2500;
+        isDeleting = true;
+      } else if (isDeleting && currentText === "") {
+        isDeleting = false;
+        currentIdx = (currentIdx + 1) % placeholders.length;
+        typeSpeed = 500;
+      }
+      
+      timeout = setTimeout(type, typeSpeed);
+    };
+    
+    timeout = setTimeout(type, 1000);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHeadingWord(prev => prev === "Research" ? "Lumen" : "Research");
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleUpload = async (file) => {
     if (!file) return;
@@ -183,8 +235,23 @@ export default function LandingPage() {
           <div className="pulse-orb mr-3"></div> Agentic AI · Multi-Agent · RAG · HITL
         </motion.div>
         
-        <motion.h1 variants={staggerItem} className="text-[48px] sm:text-[56px] font-bold leading-[1.1] tracking-tight mb-6 text-gradient-shimmer">
-          Research anything.
+        <motion.h1 variants={staggerItem} className="text-[48px] sm:text-[56px] font-bold leading-[1.1] tracking-tight mb-6 flex justify-center items-center">
+          <span className="relative inline-flex items-center justify-end overflow-hidden mr-3">
+            <span className="invisible pointer-events-none">Research</span>
+            <AnimatePresence mode="popLayout">
+              <motion.span
+                key={headingWord}
+                initial={{ y: 50, opacity: 0, position: "absolute", right: 0 }}
+                animate={{ y: 0, opacity: 1, position: "absolute", right: 0 }}
+                exit={{ y: -50, opacity: 0, position: "absolute", right: 0 }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                className="text-gradient-shimmer whitespace-nowrap"
+              >
+                {headingWord}
+              </motion.span>
+            </AnimatePresence>
+          </span>
+          <span className="text-gradient-shimmer">anything.</span>
         </motion.h1>
         <motion.h2 variants={staggerItem} className="text-[28px] sm:text-[36px] font-medium leading-[1.1] tracking-tight mb-6 text-text drop-shadow-md">
           Verified by AI, approved by you.
@@ -212,7 +279,7 @@ export default function LandingPage() {
               onChange={(e) => setQuery(e.target.value)}
               onFocus={() => setIsInputFocused(true)}
               onBlur={() => setIsInputFocused(false)}
-              placeholder="Latest breakthroughs in quantum error correction 2025"
+              placeholder={placeholderText || "Latest breakthroughs in quantum error correction..."}
               className="w-full h-[64px] pl-16 pr-40 glass-panel text-[16px] text-text border-[rgba(255,255,255,0.05)] transition-all placeholder:text-textMuted/50 outline-none rounded-[20px]"
               disabled={submitting}
             />
