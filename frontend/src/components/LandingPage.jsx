@@ -235,24 +235,28 @@ export default function LandingPage() {
           <div className="pulse-orb mr-3"></div> Agentic AI · Multi-Agent · RAG · HITL
         </motion.div>
         
-        <motion.h1 variants={staggerItem} className="text-[48px] sm:text-[56px] font-bold leading-[1.1] tracking-tight mb-6 flex justify-center items-center">
-          <span className="relative inline-flex items-center justify-end overflow-hidden mr-3">
-            <span className="invisible pointer-events-none">Research</span>
-            <AnimatePresence mode="popLayout">
-              <motion.span
-                key={headingWord}
-                initial={{ y: 50, opacity: 0, position: "absolute", right: 0 }}
-                animate={{ y: 0, opacity: 1, position: "absolute", right: 0 }}
-                exit={{ y: -50, opacity: 0, position: "absolute", right: 0 }}
-                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                className="text-gradient-shimmer whitespace-nowrap"
-              >
-                {headingWord}
-              </motion.span>
-            </AnimatePresence>
-          </span>
-          <span className="text-gradient-shimmer">anything.</span>
-        </motion.h1>
+        <motion.div layout variants={staggerItem} className="flex justify-center items-center mb-6 overflow-hidden">
+          <motion.h1 layout className="text-[48px] sm:text-[56px] font-bold leading-[1.1] tracking-tight flex items-center">
+            <span className="relative flex overflow-hidden mr-3 h-[1.2em] items-center">
+              <AnimatePresence mode="popLayout">
+                <motion.span
+                  layout
+                  key={headingWord}
+                  initial={{ y: 50, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -50, opacity: 0 }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  className="text-gradient-shimmer whitespace-nowrap"
+                >
+                  {headingWord}
+                </motion.span>
+              </AnimatePresence>
+            </span>
+            <motion.span layout className="text-gradient-shimmer whitespace-nowrap">
+              anything.
+            </motion.span>
+          </motion.h1>
+        </motion.div>
         <motion.h2 variants={staggerItem} className="text-[28px] sm:text-[36px] font-medium leading-[1.1] tracking-tight mb-6 text-text drop-shadow-md">
           Verified by AI, approved by you.
         </motion.h2>
