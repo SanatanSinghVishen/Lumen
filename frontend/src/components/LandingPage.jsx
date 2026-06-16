@@ -6,6 +6,7 @@ import ErrorScreen from "./ErrorScreen";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeUp, staggerContainer, staggerItem, scaleIn } from "../utils/motionVariants";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch";
+import { useAuth } from "@clerk/clerk-react";
 
 export default function LandingPage() {
   const [query, setQuery] = useState("");
@@ -23,8 +24,10 @@ export default function LandingPage() {
   const [uploadedDocs, setUploadedDocs] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
+  const { getToken } = useAuth();
 
   useEffect(() => {
     const checkHealth = async () => {
@@ -110,22 +113,52 @@ export default function LandingPage() {
 
     setUploading(true);
     setUploadStatus(null);
+    setUploadProgress(0);
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      const res = await authFetch("/upload", { method: "POST", body: formData });
-      const json = await res.json();
-      if (res.ok) {
-        setUploadStatus({ type: "success", message: `${json.filename} — ${json.chunks} chunks indexed` });
-        fetchDocuments();
-      } else {
-        setUploadStatus({ type: "error", message: json.detail || "Upload failed" });
-      }
+      const token = await getToken();
+      
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${API_URL}/upload`);
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = (event.loaded / event.total) * 100;
+          setUploadProgress(percentComplete);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const json = JSON.parse(xhr.responseText);
+          setUploadStatus({ type: "success", message: `${json.filename} — ${json.chunks} chunks indexed` });
+          fetchDocuments();
+        } else {
+          let errorMsg = "Upload failed";
+          try {
+            const json = JSON.parse(xhr.responseText);
+            errorMsg = json.detail?.message || json.detail || errorMsg;
+          } catch (e) {}
+          setUploadStatus({ type: "error", message: errorMsg });
+        }
+        setUploading(false);
+        setUploadProgress(0);
+      };
+
+      xhr.onerror = () => {
+        setUploadStatus({ type: "error", message: "Network error — is the backend running?" });
+        setUploading(false);
+        setUploadProgress(0);
+      };
+
+      xhr.send(formData);
     } catch (err) {
-      setUploadStatus({ type: "error", message: "Network error — is the backend running?" });
-    } finally {
+      setUploadStatus({ type: "error", message: "Failed to initialize upload." });
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -280,12 +313,25 @@ export default function LandingPage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => fileInputRef.current?.click()}
-              className={`h-[64px] w-[64px] shrink-0 flex items-center justify-center rounded-[20px] transition-colors border
-                ${uploading ? "opacity-50 cursor-not-allowed border-transparent bg-[rgba(255,255,255,0.05)] text-textMuted" 
+              disabled={uploading}
+              className={`h-[64px] w-[64px] shrink-0 flex items-center justify-center rounded-[20px] transition-colors border relative
+                ${uploading ? "cursor-not-allowed border-transparent bg-[rgba(255,255,255,0.05)] text-textMuted" 
                   : "border-[rgba(255,255,255,0.05)] bg-[rgba(255,255,255,0.02)] backdrop-blur-md text-textMuted hover:text-text hover:bg-[rgba(255,255,255,0.05)]"}`}
               title="Attach Documents"
             >
-              <IconPaperclip size={24} stroke={1.5} />
+              {uploading ? (
+                <div className="relative w-8 h-8 flex items-center justify-center">
+                  <svg className={`absolute inset-0 w-full h-full transform -rotate-90 ${uploadProgress === 100 ? 'animate-pulse' : ''}`} viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="3" />
+                    <circle cx="18" cy="18" r="16" fill="none" stroke="#4285F4" strokeWidth="3" 
+                      strokeDasharray="100" strokeDashoffset={100 - uploadProgress} 
+                      className="transition-all duration-300 ease-out" />
+                  </svg>
+                  <span className="text-[10px] font-mono text-gemini-blue">{Math.round(uploadProgress)}</span>
+                </div>
+              ) : (
+                <IconPaperclip size={24} stroke={1.5} />
+              )}
             </motion.button>
 
             <motion.div 

@@ -17,16 +17,16 @@ export default function ResultPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    async function fetchReview() {
+    async function fetchResult() {
       try {
-        const res = await authFetch(`/review/${thread_id}`);
+        const res = await authFetch(`/history/${thread_id}`);
         const json = await res.json();
         setData(json);
       } catch (err) {
         console.error(err);
       }
     }
-    fetchReview();
+    fetchResult();
   }, [thread_id]);
 
   const handleDownload = () => {

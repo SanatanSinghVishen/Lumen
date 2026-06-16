@@ -14,13 +14,20 @@ export function useAuthenticatedFetch() {
 
   return async (path, options = {}) => {
     const token = await getToken();
+    
+    const headers = {
+      "Authorization": `Bearer ${token}`,
+      ...options.headers,
+    };
+
+    // Set application/json as default, unless we're sending FormData
+    if (!(options.body instanceof FormData) && !headers["Content-Type"]) {
+      headers["Content-Type"] = "application/json";
+    }
+
     return fetch(`${API_URL}${path}`, {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-        ...options.headers,
-      },
+      headers,
     });
   };
 }
