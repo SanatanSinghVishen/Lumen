@@ -39,11 +39,24 @@ async def synthesis_node(state: AgentState, config: RunnableConfig) -> dict:
     
     content = f"WEB RESULTS:\n{web_text}\n\nDOCUMENT RESULTS:\n{rag_text}"
     
+    eval_feedback = state.get("eval_feedback")
+    draft_report = state.get("draft_report")
+    
+    if eval_feedback and draft_report:
+        # If this is a revision, explicitly instruct the LLM to apply the feedback to the draft
+        prompt_content = (
+            f"PREVIOUS DRAFT:\n{draft_report}\n\n"
+            f"USER REVISION REQUEST:\n{eval_feedback}\n\n"
+            f"Please completely rewrite the previous draft, strictly incorporating the user's revision request above. "
+            f"Use the retrieved context below if necessary:\n\n{content}"
+        )
+    else:
+        prompt_content = f"ORIGINAL QUERY:\n{state.get('query')}\n\n{content}"
+        
     messages = [
         SystemMessage(content=SYSTEM_PROMPT),
-        HumanMessage(content=content)
-    ]
-    
+        HumanMessage(content=prompt_content)
+    ]    
     try:
         content = ""
         # Create a new config dict with the merged tags

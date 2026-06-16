@@ -49,13 +49,13 @@ def compute_eval_scores(
         trimmed_contexts = contexts[:3]
         context_str = "\n\n".join(trimmed_contexts)
 
-        system_prompt = """You are an expert evaluator of Retrieval-Augmented Generation (RAG) systems.
-Please evaluate the generated answer based on the provided context and original query.
-Compute three specific metrics on a scale of 0.0 to 1.0:
+        system_prompt = """You are an extremely strict expert evaluator of Retrieval-Augmented Generation (RAG) systems.
+Please thoroughly evaluate the generated answer based on the provided context and original query.
+Compute three specific metrics on a scale of 0.0 to 1.0. BE HARSH AND CRITICAL. Do NOT give 1.0 unless the output is absolutely flawless:
 
-1. Faithfulness: Is the answer entirely supported by the provided context? (1.0 = fully supported, 0.0 = completely hallucinated/unsupported)
-2. Answer Relevancy: How directly and concisely does the answer address the original query? (1.0 = perfectly addresses the query, 0.0 = completely irrelevant)
-3. Context Precision: How relevant and useful are the provided context chunks to the query? (1.0 = highly relevant, 0.0 = completely useless)
+1. Faithfulness: Is every single claim in the answer strictly supported by the provided context? (1.0 = perfect, penalize heavily for ANY unverified claims, assumptions, or minor hallucinations)
+2. Answer Relevancy: How directly and concisely does the answer address the original query? (1.0 = perfectly focused, penalize for tangential information, wordiness, or failing to answer the core question)
+3. Context Precision: How relevant and useful are the provided context chunks to the query? (1.0 = highly relevant, penalize for off-topic or noisy context chunks)
 
 Output a raw JSON object (and nothing else) exactly in this format:
 {{
