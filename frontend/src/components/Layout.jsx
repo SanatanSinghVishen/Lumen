@@ -1,11 +1,13 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { ReactLenis } from "lenis/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { fadeUp, fadeIn } from "../utils/motionVariants";
+import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/clerk-react";
 
 export default function Layout() {
   const location = useLocation();
   const isStreaming = location.pathname.startsWith("/loading");
+  const { user } = useUser();
 
   return (
     <ReactLenis root options={{ lerp: 0.08, smoothWheel: true }}>
@@ -33,22 +35,46 @@ export default function Layout() {
               LUMEN
             </Link>
           </div>
-          <nav className="flex items-center space-x-2 text-sm pointer-events-auto">
+          <nav className="flex items-center space-x-4 text-sm pointer-events-auto">
             <Link to="/how-it-works" className="nav-pill">
               How it works
             </Link>
             <Link to="/architecture" className="nav-pill">
               Architecture
             </Link>
-            <a href="https://github.com/SanatanSinghVishen/Lumen" target="_blank" rel="noopener noreferrer" className="nav-pill flex items-center group">
-              GitHub <span className="opacity-0 w-0 group-hover:w-auto group-hover:opacity-100 group-hover:ml-1 transition-all text-gemini-blue overflow-hidden">↗</span>
-            </a>
+
+            <SignedIn>
+              {/* History link — only shown when logged in */}
+              <Link to="/history" className="nav-pill flex items-center gap-1.5 text-textMuted hover:text-text">
+                History
+              </Link>
+
+              {/* Clerk's UserButton — shows avatar, handles sign out */}
+              <div className="pl-2 flex items-center">
+                <UserButton
+                  afterSignOutUrl="/login"
+                  appearance={{
+                    elements: {
+                      avatarBox: {
+                        width: "32px", height: "32px",
+                        border: "1px solid rgba(26,86,219,0.4)",
+                      }
+                    }
+                  }}
+                />
+              </div>
+            </SignedIn>
+
+            <SignedOut>
+              <Link to="/login" className="bg-gemini-blue text-white px-4 py-1.5 rounded-lg font-medium text-sm hover:bg-opacity-90 transition-colors">
+                Sign in
+              </Link>
+            </SignedOut>
           </nav>
         </motion.header>
 
         {/* Main Content Area */}
         <main className="flex-1 flex flex-col pt-28 pb-10">
-          {/* We wrap the Outlet in a motion.div to apply page transitions */}
           <motion.div
             key={location.pathname}
             variants={fadeUp}
@@ -74,10 +100,10 @@ export default function Layout() {
             </div>
             <div className="flex items-center space-x-5">
                <a href="https://www.linkedin.com/in/sanatan-singh-55b3502a3/" target="_blank" rel="noopener noreferrer" className="hover:text-gemini-blue transition-colors">
-                LinkedIn
+                LinkedIn ↗
               </a>
-              <a href="https://github.com/SanatanSinghVishen/Lumen" target="_blank" rel="noopener noreferrer" className="hover:text-gemini-purple transition-colors">
-                GitHub
+              <a href="https://github.com/SanatanSinghVishen" target="_blank" rel="noopener noreferrer" className="hover:text-gemini-purple transition-colors">
+                GitHub ↗
               </a>
             </div>
           </div>

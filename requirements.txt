@@ -22,13 +22,17 @@ pypdf
 langgraph-checkpoint-postgres>=2.0.0
 psycopg[binary,pool]>=3.1.0
 
-# RAGAS evaluation
-ragas>=0.1.0
-datasets>=2.0.0
+# Evaluation
+watchdog>=4.0.0
+watchdog>=4.0.0
+clerk-backend-api>=1.0.0
+supabase>=2.0.0
+python-jose[cryptography]>=3.3.0
 langchain-community
+langchain-text-splitters
 
 # SSE Streaming
 sse-starlette>=1.6.0
 
 # Abuse Protection
-python-magic>=0.4.27
+python-magic-bin>=0.4.14

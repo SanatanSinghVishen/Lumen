@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ── AGGRESSIVE MEMORY OPTIMIZATION FOR 512MB RENDER LIMIT ────────────────
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -139,7 +142,7 @@ app.add_middleware(
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Accept"],
+    allow_headers=["Content-Type", "Accept", "Authorization"],
 )
 
 app.include_router(router)

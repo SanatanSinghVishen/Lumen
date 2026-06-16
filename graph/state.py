@@ -16,8 +16,8 @@ class AgentState(TypedDict):
     final_report: str
     thread_id: str
     
-    # RAGAS fields
+    # Evaluation fields
     faithfulness: Optional[float]
     answer_relevancy: Optional[float]
     context_precision: Optional[float]
-    ragas_error: Optional[str]
+    eval_error: Optional[str]

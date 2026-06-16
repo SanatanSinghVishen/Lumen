@@ -9,7 +9,7 @@ Provides:
   - search_documents()  : real vector similarity search
   - list_documents()    : list all ingested files
   - delete_collection() : clear all stored documents
-  - ChromaEmbeddings    : LangChain-compatible wrapper for RAGAS
+  - ChromaEmbeddings    : LangChain-compatible wrapper for embeddings
 """
 
 import os
@@ -42,9 +42,9 @@ text_splitter = RecursiveCharacterTextSplitter(
 )
 
 
-# ── LangChain-compatible Embeddings wrapper (for RAGAS) ────────────────────
+# ── LangChain-compatible Embeddings wrapper ────────────────────
 class ChromaEmbeddings:
-    """Wraps ChromaDB's DefaultEmbeddingFunction so RAGAS can use it."""
+    """Wraps ChromaDB's DefaultEmbeddingFunction for LangChain compatibility."""
 
     def __init__(self):
         self._ef = default_ef

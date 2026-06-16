@@ -52,7 +52,7 @@ The result? A research report that would take you hours — delivered in minutes
 | **Multi-Agent Pipeline** | Multiple specialized AI "workers" handle different parts of the research simultaneously |
 | **Parallel Search** | Web search and document search happen at the same time — no waiting |
 | **RAG (Upload Your Docs)** | Upload PDFs or text files and the AI will search inside them for relevant info |
-| **Auto Fact-Checking** | Every report gets scored by RAGAS metrics (faithfulness, relevancy, precision) |
+| **Auto Fact-Checking** | Every report gets scored by FastEval metrics (faithfulness, relevancy, precision) |
 | **Self-Correction Loop** | If the quality score is below 75%, LUMEN automatically revises — up to 3 times |
 | **Human-in-the-Loop** | You get final say. Approve the report, or send it back with feedback |
 | **Live Streaming** | Watch the report being written in real-time, word by word (via Server-Sent Events) |
@@ -88,7 +88,7 @@ You type a question
    └──────────────┬──────────────────────────┘
                   ↓
    ┌─────────────────────────────────────────┐
-   │  📊 EVALUATOR (RAGAS)                   │
+   │  📊 EVALUATOR (FastEval)                │
    │  Scores: Faithfulness · Relevancy ·     │
    │  Precision                              │
    │  Score < 75%? → Back to Orchestrator!   │
@@ -135,7 +135,7 @@ You type a question
 | **LLM** | Gemini 2.5 Flash (via OpenRouter) | The AI that thinks, writes, and evaluates |
 | **Web Search** | Tavily API | Searches the live internet for current information |
 | **Vector Store** | ChromaDB | Stores and searches your uploaded documents |
-| **Evaluation** | RAGAS | Computes faithfulness, relevancy, and precision scores |
+| **Evaluation** | FastEval | Computes faithfulness, relevancy, and precision scores |
 | **Checkpointer** | Postgres (Supabase) / MemorySaver | Saves conversation state so sessions persist |
 | **Rate Limiting** | slowapi | Prevents abuse — protects the free API keys |
 | **Observability** | LangSmith | Optional tracing for debugging agent behavior |
@@ -178,7 +178,7 @@ Lumen/
 │       └── hitl.py         # Human-in-the-loop interrupt
 │
 ├── eval/
-│   └── ragas_scorer.py     # RAGAS metric computation
+│   └── fast_eval.py        # FastEval metric computation
 │
 ├── tools/
 │   └── ...                 # Utility tools
@@ -194,7 +194,7 @@ Lumen/
         └── components/
             ├── LandingPage.jsx      # Search input + file upload
             ├── LoadingPage.jsx      # Real-time agent progress
-            ├── ReviewPage.jsx       # Draft review + RAGAS scores
+            ├── ReviewPage.jsx       # Draft review + Evaluation scores
             ├── ResultPage.jsx       # Final report display
             ├── ArchitecturePage.jsx  # Interactive architecture diagrams
             ├── HowItWorksPage.jsx   # Animated step-by-step explainer
@@ -292,7 +292,7 @@ LANGCHAIN_PROJECT=lumen-research-agent
 This is what makes LUMEN special — it doesn't just generate a report and call it done:
 
 1. **Synthesis** writes the first draft
-2. **RAGAS Evaluator** scores it on three metrics:
+2. **Fast Evaluator** scores it on three metrics:
    - **Faithfulness** — Does the report match the source material?
    - **Answer Relevancy** — Does it actually answer the original question?
    - **Context Precision** — Did it use the right parts of the research?

@@ -47,15 +47,15 @@ workflow.add_edge("orchestrator", "rag_agent")
 workflow.add_edge("web_search", "synthesis")
 workflow.add_edge("rag_agent", "synthesis")
 
-from eval.ragas_scorer import compute_ragas_scores
+from eval.fast_eval import compute_eval_scores
 import logging
 
-logger = logging.getLogger("lumen.ragas")
+logger = logging.getLogger("lumen.fasteval")
 
-async def ragas_eval_node(state: AgentState) -> AgentState:
+async def fast_eval_node(state: AgentState) -> AgentState:
     """
-    Computes RAGAS metrics for the current draft.
-    Never blocks the pipeline — if RAGAS fails, scores are None
+    Computes FastEval metrics for the current draft.
+    Never blocks the pipeline — if FastEval fails, scores are None
     and the pipeline continues to the LLM judge as normal.
     """
     try:
@@ -71,18 +71,18 @@ async def ragas_eval_node(state: AgentState) -> AgentState:
         contexts = [c for c in raw_contexts if c and c.strip()]
 
         if not contexts:
-            logger.warning("RAGAS node: no contexts available — skipping")
+            logger.warning("FastEval node: no contexts available — skipping")
             return {
                 **state,
                 "faithfulness":      None,
                 "answer_relevancy":  None,
                 "context_precision": None,
-                "ragas_error":       "no_contexts",
+                "eval_error":       "no_contexts",
             }
 
         import asyncio
         scores = await asyncio.to_thread(
-            compute_ragas_scores,
+            compute_eval_scores,
             query=state["query"],
             answer=state.get("draft_report") or state.get("merged_context", ""),
             contexts=contexts,
@@ -93,22 +93,22 @@ async def ragas_eval_node(state: AgentState) -> AgentState:
             "faithfulness":      scores["faithfulness"],
             "answer_relevancy":  scores["answer_relevancy"],
             "context_precision": scores["context_precision"],
-            "ragas_error":       scores["error"],
+            "eval_error":       scores["error"],
         }
 
     except Exception as e:
-        logger.warning("RAGAS node crashed — %s", str(e))
+        logger.warning("FastEval node crashed — %s", str(e))
         return {
             **state,
             "faithfulness":      None,
             "answer_relevancy":  None,
             "context_precision": None,
-            "ragas_error":       str(e),
+            "eval_error":       str(e),
         }
 
-workflow.add_node("ragas_eval", ragas_eval_node)
-workflow.add_edge("synthesis", "ragas_eval")
-workflow.add_edge("ragas_eval", "evaluator")
+workflow.add_node("fast_eval", fast_eval_node)
+workflow.add_edge("synthesis", "fast_eval")
+workflow.add_edge("fast_eval", "evaluator")
 
 # Conditional Edge for Evaluator
 workflow.add_conditional_edges(

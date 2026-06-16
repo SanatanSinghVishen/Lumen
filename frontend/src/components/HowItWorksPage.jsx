@@ -29,7 +29,7 @@ export default function HowItWorksPage() {
       id: "evaluator",
       icon: <IconBrain size={24} stroke={1.5} />,
       title: "4. Dual Evaluation",
-      desc: "Two evaluators run in sequence: RAGAS computes Faithfulness and Answer Relevancy, then an LLM-as-Judge scores relevance, groundedness, and completeness. If Overall Score < 0.75, the pipeline retries (up to 3×)."
+      desc: "Two evaluators run in sequence: FastEval computes Faithfulness and Answer Relevancy, then an LLM-as-Judge scores relevance, groundedness, and completeness. If Overall Score < 0.75, the pipeline retries (up to 3×)."
     },
     {
       id: "hitl",

@@ -10,6 +10,8 @@ from slowapi import Limiter
 
 from api.schemas import QueryRequest, QueryResponse, ReviewResponse, ApproveRequest
 from cost_guard import check_query, check_upload
+from api.auth import verify_clerk_token, get_optional_user
+from api.database import create_session, update_session, get_user_history, get_session_detail
 
 # Instantiate limiter here to avoid circular imports, main.py will import it and attach to app
 limiter = Limiter(
@@ -44,6 +46,7 @@ def release_slot(ip: str):
 @limiter.limit("3/10minute")
 async def run_research(request: Request, body: QueryRequest, background_tasks: BackgroundTasks):
     client_ip = get_remote_address(request)
+    user_id = await get_optional_user(request)
 
     # Cost guard
     guard = check_query()
@@ -74,11 +77,21 @@ async def run_research(request: Request, body: QueryRequest, background_tasks: B
     thread_id = str(uuid.uuid4())
     config    = {"configurable": {"thread_id": thread_id}}
 
+    await create_session(
+        user_id=user_id,
+        thread_id=thread_id,
+        query=body.query,
+    )
+
     async def run_and_release():
         try:
             from main import app_graph
             # Write the query to the thread state without starting execution
             await app_graph.aupdate_state(config, {"query": body.query})
+        except Exception as e:
+            await update_session(thread_id=thread_id, status="failed")
+            import logging
+            logging.getLogger("lumen").error("Graph failed for thread %s: %s", thread_id, str(e))
         finally:
             release_slot(client_ip)  # always release — even on crash
 
@@ -117,7 +130,7 @@ async def get_review(request: Request, thread_id: str):
         "faithfulness":      state.values.get("faithfulness"),
         "answer_relevancy":  state.values.get("answer_relevancy"),
         "context_precision": state.values.get("context_precision"),
-        "ragas_error":       state.values.get("ragas_error"),
+        "eval_error":       state.values.get("eval_error"),
         "web_results":       state.values.get("web_results", []),
     }
 
@@ -135,6 +148,49 @@ async def resume_graph(thread_id: str, command_payload: dict):
 @router.post("/approve/{thread_id}")
 @limiter.limit("10/10minute")
 async def approve(request: Request, thread_id: str, body: ApproveRequest, background_tasks: BackgroundTasks):
+    user_id = await get_optional_user(request)
+    
+    # Verify this thread belongs to this user (if they are signed in)
+    session = await get_session_detail(thread_id=thread_id, user_id=user_id)
+    if not session:
+        # If anonymous, we just verify the state exists in LangGraph
+        if not user_id:
+            from main import app_graph
+            state = await app_graph.aget_state({"configurable": {"thread_id": thread_id}})
+            if not state.values:
+                raise HTTPException(status_code=404, detail={"error": "session_not_found"})
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "error":   "session_not_found",
+                    "message": "Research session not found or does not belong to you.",
+                }
+            )
+
+    config = {"configurable": {"thread_id": thread_id}}
+
+    if body.action == "approve":
+        # Get final state from LangGraph to save the report
+        from main import app_graph
+        state = await app_graph.aget_state(config)
+        final_report = state.values.get("draft_report", "")
+
+        # Save final report and scores to history
+        await update_session(
+            thread_id=thread_id,
+            status="approved",
+            final_report=final_report,
+            eval_score=state.values.get("eval_score"),
+            faithfulness=state.values.get("faithfulness"),
+            answer_relevancy=state.values.get("answer_relevancy"),
+            context_precision=state.values.get("context_precision"),
+            retry_count=state.values.get("retry_count", 0),
+        )
+    else:
+        # If not approved, it's a revision, so status goes back to running
+        await update_session(thread_id=thread_id, status="running")
+
     command_payload = {
         "action": body.action,
         "edits": body.edits,
@@ -178,7 +234,7 @@ async def stream_thread(request: Request, thread_id: str):
                         "web_search":    "Searching the web...",
                         "rag_retrieval": "Retrieving from documents...",
                         "synthesis":     "Writing the report...",
-                        "ragas_eval":    "Scoring with RAGAS...",
+                        "fast_eval":    "Scoring with FastEval...",
                         "evaluator":     "Evaluating quality...",
                         "hitl":          "Waiting for your approval...",
                     }
@@ -210,6 +266,7 @@ async def stream_thread(request: Request, thread_id: str):
                         }
 
                 if kind == "on_chain_start" and name == "hitl":
+                    await update_session(thread_id=thread_id, status="awaiting_review")
                     yield {
                         "event": "hitl",
                         "data": json.dumps({"thread_id": thread_id})
@@ -222,6 +279,64 @@ async def stream_thread(request: Request, thread_id: str):
             yield {"event": "error", "data": json.dumps({"message": str(e)})}
 
     return EventSourceResponse(event_generator())
+
+
+# ── GET /history — returns user's research history ────────────────────
+@router.get("/history")
+@limiter.limit("30/minute")
+async def get_history(
+    request: Request,
+    limit:   int = 20,
+    offset:  int = 0,
+):
+    user_id = await verify_clerk_token(request)
+    sessions = await get_user_history(
+        user_id=user_id,
+        limit=min(limit, 50),   # cap at 50 per page
+        offset=offset,
+    )
+    return {"sessions": sessions, "count": len(sessions)}
+
+
+# ── GET /history/:thread_id — returns full session with report ────────
+@router.get("/history/{thread_id}")
+@limiter.limit("30/minute")
+async def get_history_detail(request: Request, thread_id: str):
+    user_id = await get_optional_user(request)
+    session = await get_session_detail(thread_id=thread_id, user_id=user_id)
+    if not session:
+        # Check LangGraph directly for anonymous sessions
+        from main import app_graph
+        config = {"configurable": {"thread_id": thread_id}}
+        state = await app_graph.aget_state(config)
+        
+        if not state.values:
+            raise HTTPException(
+                status_code=404,
+                detail={"error": "session_not_found"}
+            )
+            
+        # Construct session-like object from LangGraph state
+        next_node = state.next
+        if next_node and "hitl" in next_node:
+            status = "awaiting_review"
+        elif not next_node and state.values:
+            status = "approved" if state.values.get("final_report") else "complete"
+        else:
+            status = "running"
+            
+        return {
+            "thread_id": thread_id,
+            "query": state.values.get("query", "Unknown query"),
+            "status": status,
+            "final_report": state.values.get("final_report", state.values.get("draft_report", "")),
+            "eval_score": state.values.get("eval_score"),
+            "faithfulness": state.values.get("faithfulness"),
+            "answer_relevancy": state.values.get("answer_relevancy"),
+            "context_precision": state.values.get("context_precision"),
+            "retry_count": state.values.get("retry_count", 0)
+        }
+    return session
 
 
 # ── RAG Document Management ─────────────────────────────────────────────────

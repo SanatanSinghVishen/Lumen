@@ -256,3 +256,49 @@ body {
   background: none;
   padding: 0;
 }
+
+/* ── Clerk component overrides ──────────────────────────────── */
+.glassmorphism-card {
+  background: rgba(15, 17, 23, 0.85) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+.clerk-header-title {
+  color: #F1F5F9 !important;
+  font-size: 22px !important;
+  font-weight: 500 !important;
+}
+
+.clerk-header-subtitle {
+  color: #94A3B8 !important;
+}
+
+.clerk-social-btn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #F1F5F9 !important;
+  transition: all 0.15s ease !important;
+}
+
+.clerk-social-btn:hover {
+  background: rgba(26, 86, 219, 0.15) !important;
+  border-color: rgba(26, 86, 219, 0.4) !important;
+}
+
+.clerk-primary-btn {
+  background: #1A56DB !important;
+  border: none !important;
+  font-weight: 500 !important;
+  transition: all 0.15s ease !important;
+}
+
+.clerk-primary-btn:hover {
+  background: #1648C0 !important;
+  transform: translateY(-1px) !important;
+}
+
+.clerk-footer-link {
+  color: #1A56DB !important;
+}

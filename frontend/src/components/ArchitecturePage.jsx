@@ -232,7 +232,7 @@ const WorkflowView = () => (
 
     {/* 4. Evaluator */}
     <div className="w-full max-w-[360px]">
-      <DiagramNode icon={<IconFileCheck size={28} />} title="Fact-checks and scores" techLabel="Evaluator (RAGAS)" description="Scores the draft for accuracy. If the score is below 75%, it automatically sends it back to the Orchestrator for revision." color="gemini-blue" delay={0.8} />
+      <DiagramNode icon={<IconFileCheck size={28} />} title="Fact-checks and scores" techLabel="Evaluator (FastEval)" description="Scores the draft for accuracy. If the score is below 75%, it automatically sends it back to the Orchestrator for revision." color="gemini-blue" delay={0.8} />
     </div>
 
     <RevisionLoopLabel delay={0.9} />

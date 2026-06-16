@@ -7,17 +7,19 @@ import { API_URL } from "../App";
 import { IconDownload, IconPlus, IconCheck } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeUp, scaleIn, staggerContainer, staggerItem } from "../utils/motionVariants";
+import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch";
 
 export default function ResultPage() {
   const { thread_id } = useParams();
   const navigate = useNavigate();
+  const authFetch = useAuthenticatedFetch();
   const [data, setData] = useState(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     async function fetchReview() {
       try {
-        const res = await fetch(`${API_URL}/review/${thread_id}`);
+        const res = await authFetch(`/review/${thread_id}`);
         const json = await res.json();
         setData(json);
       } catch (err) {

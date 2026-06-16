@@ -5,6 +5,7 @@ import { API_URL } from "../App";
 import ErrorScreen from "./ErrorScreen";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeUp, staggerContainer, staggerItem, scaleIn } from "../utils/motionVariants";
+import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch";
 
 export default function LandingPage() {
   const [query, setQuery] = useState("");
@@ -12,6 +13,7 @@ export default function LandingPage() {
   const [showColdStartBanner, setShowColdStartBanner] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const navigate = useNavigate();
+  const authFetch = useAuthenticatedFetch();
 
   // Animation states
   const [placeholderText, setPlaceholderText] = useState("");
@@ -41,7 +43,7 @@ export default function LandingPage() {
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch(`${API_URL}/documents`);
+      const res = await authFetch("/documents");
       const json = await res.json();
       setUploadedDocs(json.documents || []);
     } catch {
@@ -112,7 +114,7 @@ export default function LandingPage() {
     formData.append("file", file);
 
     try {
-      const res = await fetch(`${API_URL}/upload`, { method: "POST", body: formData });
+      const res = await authFetch("/upload", { method: "POST", body: formData });
       const json = await res.json();
       if (res.ok) {
         setUploadStatus({ type: "success", message: `${json.filename} — ${json.chunks} chunks indexed` });
@@ -129,7 +131,7 @@ export default function LandingPage() {
 
   const handleClearDocs = async () => {
     try {
-      await fetch(`${API_URL}/documents`, { method: "DELETE" });
+      await authFetch("/documents", { method: "DELETE" });
       setUploadedDocs([]);
       setUploadStatus({ type: "success", message: "All documents cleared" });
     } catch {
@@ -157,9 +159,8 @@ export default function LandingPage() {
     setError(null);
 
     try {
-      const res = await fetch(`${API_URL}/research`, {
+      const res = await authFetch("/research", {
         method:  "POST",
-        headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ query: query.trim() }),
       });
 
@@ -193,7 +194,7 @@ export default function LandingPage() {
   const steps = [
     { num: "01", icon: <IconSitemap size={20} stroke={1.5} />, label: "Orchestrator decomposes", desc: "Breaks your query into parallel sub-tasks" },
     { num: "02", icon: <IconWorldSearch size={20} stroke={1.5} />, label: "Agents retrieve", desc: "Searches the web & your uploaded documents" },
-    { num: "03", icon: <IconBrain size={20} stroke={1.5} />, label: "Dual evaluation", desc: "RAGAS metrics + LLM-as-judge scoring" },
+    { num: "03", icon: <IconBrain size={20} stroke={1.5} />, label: "Dual evaluation", desc: "FastEval metrics + LLM-as-judge scoring" },
     { num: "04", icon: <IconUserCheck size={20} stroke={1.5} />, label: "You approve", desc: "Review, revise, or approve the final report" },
   ];
 
@@ -408,7 +409,7 @@ export default function LandingPage() {
             { name: "ChromaDB", logo: "https://mintlify.s3-us-west-1.amazonaws.com/chroma/logo/dark.svg" },
             { name: "Gemini 2.5", logo: "https://www.gstatic.com/images/branding/googlelogo/svg/googlelogo_clr_74x24px.svg" },
             { name: "Tavily", icon: <IconWorldSearch size={36} className="text-gemini-cyan" /> },
-            { name: "RAGAS", logo: "https://raw.githubusercontent.com/explodinggradients/ragas/main/docs/_static/imgs/logo.png" },
+            { name: "React", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" },
             { name: "SSE Streaming", icon: <IconActivity size={36} className="text-gemini-purple" /> },
             { name: "Docker", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/docker/docker-original.svg" }
           ].map((tech) => (

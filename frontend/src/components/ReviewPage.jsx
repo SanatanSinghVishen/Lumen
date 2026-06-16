@@ -5,6 +5,7 @@ import { API_URL } from "../App";
 import ErrorScreen from "./ErrorScreen";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeUp, staggerContainer, staggerItem } from "../utils/motionVariants";
+import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch";
 
 const MetricRow = ({ label, value, hint }) => {
   // Smooth gradient mapping for the progress bar
@@ -52,6 +53,7 @@ export default function ReviewPage() {
   const { thread_id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const authFetch = useAuthenticatedFetch();
   const [data, setData] = useState(
     location.state?.prefetchedReport
       ? { draft_report: location.state.prefetchedReport, status: "awaiting_review" }
@@ -66,7 +68,7 @@ export default function ReviewPage() {
   useEffect(() => {
     async function fetchReview() {
       try {
-        const res = await fetch(`${API_URL}/review/${thread_id}`);
+        const res = await authFetch(`/review/${thread_id}`);
         
         if (res.status === 404) {
           setError("session_expired");
@@ -101,9 +103,8 @@ export default function ReviewPage() {
   const handleAction = async (action) => {
     setSubmitting(true);
     try {
-      await fetch(`${API_URL}/approve/${thread_id}`, {
+      await authFetch(`/approve/${thread_id}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, notes: feedback }),
       });
       if (action === "approve") {
@@ -256,10 +257,10 @@ export default function ReviewPage() {
                 value={data.answer_relevancy}
                 hint="Directly addresses original query"
               />
-              {data.ragas_error && (
-                <p className="text-[12px] text-red-400 mt-4 font-mono bg-red-400/10 border border-red-400/20 p-3 rounded-lg">
-                  ⚠ {data.ragas_error}
-                </p>
+              {data.eval_error && (
+                <div className="text-red-400 text-sm mt-3 bg-red-500/10 p-3 rounded border border-red-500/20">
+                  ⚠ {data.eval_error}
+                </div>
               )}
             </div>
 

@@ -9,7 +9,7 @@ const NODE_LABELS = {
   web_search:    { label: "Agents searching web", detail: "Scraping deep-search results" },
   rag_retrieval: { label: "Agents retrieving context", detail: "Querying vector store" },
   synthesis:     { label: "Synthesizing report", detail: "Streaming LLM draft" },
-  ragas_eval:    { label: "RAGAS evaluation", detail: "Computing faithfulness & relevancy" },
+  fast_eval:     { label: "Evaluation", detail: "Computing faithfulness & relevancy" },
   evaluator:     { label: "LLM-as-judge scoring", detail: "Final quality checks" },
   hitl:          { label: "Awaiting approval", detail: "Preparing review panel" },
 };
