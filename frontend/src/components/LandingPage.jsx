@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { IconSitemap, IconWorldSearch, IconBrain, IconUserCheck, IconSearch, IconArrowRight, IconUpload, IconFile, IconCheck, IconX, IconTrash } from "@tabler/icons-react";
+import { IconSitemap, IconWorldSearch, IconBrain, IconUserCheck, IconSearch, IconArrowRight, IconUpload, IconFile, IconCheck, IconX, IconTrash, IconPaperclip, IconSparkles, IconActivity } from "@tabler/icons-react";
 import { API_URL } from "../App";
 import ErrorScreen from "./ErrorScreen";
 import { motion, AnimatePresence } from "framer-motion";
@@ -265,96 +265,96 @@ export default function LandingPage() {
           Type a topic. Lumen deploys parallel agents to search the web, retrieve your documents, synthesize findings, and score its own confidence — before asking you to approve.
         </motion.p>
 
-        <motion.form variants={staggerItem} onSubmit={handleSubmit} className="w-full max-w-[640px] relative mb-6">
-          <motion.div 
-            animate={{ 
-              scale: isInputFocused ? 1.02 : 1,
-              boxShadow: isInputFocused ? "0 0 30px rgba(66,133,244,0.3)" : "0 0 0px rgba(66,133,244,0)"
-            }}
-            transition={{ duration: 0.3 }}
-            className="relative w-full rounded-[20px]"
-          >
-            <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-gemini-blue">
-              <IconSearch size={22} stroke={2} />
-            </div>
+        <motion.form variants={staggerItem} onSubmit={handleSubmit} className="w-full max-w-[700px] relative mb-6">
+          <div className="flex items-center gap-3 w-full">
             <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={() => setIsInputFocused(true)}
-              onBlur={() => setIsInputFocused(false)}
-              placeholder={placeholderText || "Latest breakthroughs in quantum error correction..."}
-              className="w-full h-[64px] pl-16 pr-40 glass-panel text-[16px] text-text border-[rgba(255,255,255,0.05)] transition-all placeholder:text-textMuted/50 outline-none rounded-[20px]"
-              disabled={submitting}
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.txt,.md,.csv"
+              className="hidden"
+              onChange={(e) => handleUpload(e.target.files[0])}
             />
-            <div className="absolute inset-y-0 right-2 flex items-center">
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                type="submit" 
-                disabled={submitting || !query.trim()}
-                className="h-12 px-6 bg-gradient-primary text-white text-[14px] font-medium rounded-[16px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-shadow shadow-lg hover:shadow-xl"
-              >
-                Research <IconArrowRight size={18} className="ml-2" stroke={2} />
-              </motion.button>
-            </div>
-          </motion.div>
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => fileInputRef.current?.click()}
+              className={`h-[64px] w-[64px] shrink-0 flex items-center justify-center rounded-[20px] transition-colors border
+                ${uploading ? "opacity-50 cursor-not-allowed border-transparent bg-[rgba(255,255,255,0.05)] text-textMuted" 
+                  : "border-[rgba(255,255,255,0.05)] bg-[rgba(255,255,255,0.02)] backdrop-blur-md text-textMuted hover:text-text hover:bg-[rgba(255,255,255,0.05)]"}`}
+              title="Attach Documents"
+            >
+              <IconPaperclip size={24} stroke={1.5} />
+            </motion.button>
 
-          {/* Minimal Document Upload & List */}
-          <div className="w-full flex items-center justify-between gap-2 mt-4 px-2">
-            <div className="flex items-center gap-2 flex-wrap">
+            <motion.div 
+              animate={{ 
+                scale: isInputFocused ? 1.02 : 1,
+                boxShadow: isInputFocused ? "0 0 30px rgba(66,133,244,0.3)" : "0 0 0px rgba(66,133,244,0)"
+              }}
+              transition={{ duration: 0.3 }}
+              className="relative flex-1 rounded-[20px]"
+            >
+              <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-gemini-blue">
+                <IconSearch size={22} stroke={2} />
+              </div>
               <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.txt,.md,.csv"
-                className="hidden"
-                onChange={(e) => handleUpload(e.target.files[0])}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => setIsInputFocused(true)}
+                onBlur={() => setIsInputFocused(false)}
+                placeholder={placeholderText || "Latest breakthroughs in quantum error correction..."}
+                className="w-full h-[64px] pl-16 pr-40 glass-panel text-[16px] text-text border-[rgba(255,255,255,0.05)] transition-all placeholder:text-textMuted/50 outline-none rounded-[20px]"
+                disabled={submitting}
               />
-              <motion.button 
-                type="button"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => fileInputRef.current?.click()}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-medium transition-colors border
-                  ${uploading ? "opacity-50 cursor-not-allowed border-transparent bg-[rgba(255,255,255,0.05)] text-textMuted" 
-                    : "border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] text-textMuted hover:text-text hover:bg-[rgba(255,255,255,0.08)]"}`}
-              >
-                <IconUpload size={14} stroke={2} /> 
-                {uploading ? "Uploading..." : "Attach Docs"}
-              </motion.button>
-              
-              {/* List uploaded docs as small badges */}
-              {uploadedDocs.map((doc, idx) => (
-                <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] bg-gemini-blue/10 border border-gemini-blue/20 text-gemini-blue max-w-[160px]">
-                  <IconFile size={12} className="shrink-0" />
-                  <span className="truncate">{doc.filename}</span>
-                </div>
-              ))}
-            </div>
-
-            {uploadedDocs.length > 0 && (
-              <motion.button
-                type="button"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={handleClearDocs}
-                className="text-textMuted hover:text-gemini-pink p-1.5 rounded-full hover:bg-[rgba(255,255,255,0.05)] transition-colors shrink-0"
-                title="Clear all documents"
-              >
-                <IconTrash size={14} />
-              </motion.button>
-            )}
+              <div className="absolute inset-y-0 right-2 flex items-center">
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  type="submit" 
+                  disabled={submitting || !query.trim()}
+                  className="h-12 px-6 bg-gradient-primary text-white text-[14px] font-medium rounded-[16px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-shadow shadow-lg hover:shadow-xl"
+                >
+                  Research <IconArrowRight size={18} className="ml-2" stroke={2} />
+                </motion.button>
+              </div>
+            </motion.div>
           </div>
           
           <AnimatePresence>
-            {uploadStatus && (
+            {(uploadedDocs.length > 0 || uploadStatus) && (
               <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className={`text-[12px] px-3 mt-3 text-left ${uploadStatus.type === "success" ? "text-green-400" : "text-red-400"}`}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="w-full flex flex-col gap-2 mt-4 px-2"
               >
-                {uploadStatus.message}
+                {uploadedDocs.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {uploadedDocs.map((doc, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] bg-gemini-blue/10 border border-gemini-blue/20 text-gemini-blue max-w-[160px]">
+                        <IconFile size={12} className="shrink-0" />
+                        <span className="truncate">{doc.filename}</span>
+                      </div>
+                    ))}
+                    
+                    <button
+                      type="button"
+                      onClick={handleClearDocs}
+                      className="text-textMuted hover:text-gemini-pink p-1.5 rounded-full hover:bg-[rgba(255,255,255,0.05)] transition-colors shrink-0"
+                      title="Clear all documents"
+                    >
+                      <IconTrash size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {uploadStatus && (
+                  <div className={`text-[12px] text-left ${uploadStatus.type === "success" ? "text-green-400" : "text-red-400"}`}>
+                    {uploadStatus.message}
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -401,10 +401,24 @@ export default function LandingPage() {
 
       {/* Tech Stack Strip */}
       <motion.section variants={fadeUp} className="w-full py-8 px-6 mt-auto">
-        <div className="max-w-4xl mx-auto flex flex-wrap justify-center gap-3">
-          {["LangGraph", "FastAPI", "ChromaDB", "Gemini 2.5 Flash", "Tavily", "RAGAS", "SSE Streaming", "Docker"].map((tech) => (
-            <div key={tech} className="px-4 py-1.5 glass-pill text-[12px] text-textMuted hover:text-text transition-colors font-mono hover:border-gemini-blue/30 cursor-default">
-              {tech}
+        <div className="max-w-5xl mx-auto flex flex-wrap justify-center gap-12 items-center">
+          {[
+            { name: "LangGraph", logo: "https://cdn.simpleicons.org/langchain/white" },
+            { name: "FastAPI", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/fastapi/fastapi-original.svg" },
+            { name: "ChromaDB", logo: "https://mintlify.s3-us-west-1.amazonaws.com/chroma/logo/dark.svg" },
+            { name: "Gemini 2.5", logo: "https://www.gstatic.com/images/branding/googlelogo/svg/googlelogo_clr_74x24px.svg" },
+            { name: "Tavily", icon: <IconWorldSearch size={36} className="text-gemini-cyan" /> },
+            { name: "RAGAS", logo: "https://raw.githubusercontent.com/explodinggradients/ragas/main/docs/_static/imgs/logo.png" },
+            { name: "SSE Streaming", icon: <IconActivity size={36} className="text-gemini-purple" /> },
+            { name: "Docker", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/docker/docker-original.svg" }
+          ].map((tech) => (
+            <div key={tech.name} className="flex flex-col items-center justify-center gap-3 opacity-60 hover:opacity-100 transition-opacity duration-300">
+              {tech.logo ? (
+                <img src={tech.logo} alt={tech.name} className="h-10 w-auto object-contain drop-shadow-md" />
+              ) : (
+                tech.icon
+              )}
+              <span className="text-[11px] text-textMuted font-mono uppercase tracking-wider">{tech.name}</span>
             </div>
           ))}
         </div>
