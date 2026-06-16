@@ -35,4 +35,5 @@ langchain-text-splitters
 sse-starlette>=1.6.0
 
 # Abuse Protection
-python-magic-bin>=0.4.14
+python-magic; sys_platform != 'win32'
+python-magic-bin; sys_platform == 'win32'
