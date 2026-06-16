@@ -56,10 +56,9 @@ def compute_ragas_scores(
         from ragas.embeddings import LangchainEmbeddingsWrapper
         from datasets import Dataset
 
-        # Rate limit protection — serialize RAGAS calls
-        # RAGAS fires multiple LLM calls per metric; this prevents
-        # smashing the 30 RPM Groq ceiling
-        time.sleep(2)
+        # RAGAS fires multiple LLM calls per metric.
+        # We use Gemini-2.5-flash via OpenRouter which has high rate limits,
+        # so we can use a high number of workers for parallel execution.
 
         # Use only top 3 contexts to minimise LLM calls
         # (3 contexts × 2 metrics = ~6 LLM calls instead of 30+)
@@ -82,7 +81,7 @@ def compute_ragas_scores(
         dataset = Dataset.from_dict(data)
 
         from ragas.run_config import RunConfig
-        run_config = RunConfig(max_workers=2, max_retries=10)
+        run_config = RunConfig(max_workers=16, max_retries=10)
 
         # Explicitly bind LLM and embeddings to metrics to fix AssertionError in newer ragas versions
         faithfulness.llm = ragas_llm

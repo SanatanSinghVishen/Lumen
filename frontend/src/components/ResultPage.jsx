@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import Mermaid from "./Mermaid";
 import { API_URL } from "../App";
 import { IconDownload, IconPlus, IconCheck } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -104,8 +106,21 @@ export default function ResultPage() {
         <div className="absolute top-[-100px] left-1/2 transform -translate-x-1/2 w-[400px] h-[200px] bg-gemini-blue/10 blur-[60px] pointer-events-none rounded-full"></div>
         
         <div className="p-8 sm:p-12 relative z-10">
-          <div className="prose w-full max-w-none text-[15px] leading-relaxed">
-            <ReactMarkdown>{data.final_report || data.draft_report || ""}</ReactMarkdown>
+          <div className="prose w-full max-w-none text-[15px] leading-relaxed markdown-body">
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              components={{
+                code({node, inline, className, children, ...props}) {
+                  const match = /language-(\w+)/.exec(className || '');
+                  if (!inline && match && match[1] === 'mermaid') {
+                    return <Mermaid chart={String(children).replace(/\n$/, '')} />
+                  }
+                  return <code className={className} {...props}>{children}</code>
+                }
+              }}
+            >
+              {data.final_report || data.draft_report || ""}
+            </ReactMarkdown>
           </div>
         </div>
       </motion.div>
