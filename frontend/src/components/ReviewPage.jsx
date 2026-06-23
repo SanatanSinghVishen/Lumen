@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { API_URL } from "../App";
 import ErrorScreen from "./ErrorScreen";
 import { motion, AnimatePresence } from "framer-motion";
@@ -175,7 +176,7 @@ export default function ReviewPage() {
           
           <div className="flex-1 p-8 overflow-y-auto scroll-smooth">
             <div className="prose w-full max-w-3xl mx-auto">
-              <ReactMarkdown>{data.draft_report || ""}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.draft_report || ""}</ReactMarkdown>
             </div>
           </div>
         </motion.div>

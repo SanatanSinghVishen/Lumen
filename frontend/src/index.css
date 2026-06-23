@@ -187,19 +187,48 @@ body {
   margin-bottom: 1rem;
   letter-spacing: -0.02em;
 }
-.prose h1 { font-size: 1.5rem; }
-.prose h2 { font-size: 1.25rem; }
+.prose h1 {
+  font-size: 1.6rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 1.5rem;
+}
+.prose h2 {
+  font-size: 1.25rem;
+  position: relative;
+  padding-left: 0.75rem;
+}
+.prose h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.2em;
+  bottom: 0.2em;
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #4285f4, #9b72cb);
+}
+.prose h3 {
+  font-size: 1.1rem;
+  color: #e2e8f0;
+}
 .prose p {
   margin-bottom: 1.25rem;
-  line-height: 1.7;
+  line-height: 1.8;
 }
 .prose ul {
   list-style-type: disc;
   margin-left: 1.5rem;
   margin-bottom: 1.25rem;
 }
+.prose ol {
+  list-style-type: decimal;
+  margin-left: 1.5rem;
+  margin-bottom: 1.25rem;
+}
 .prose li {
   margin-bottom: 0.5rem;
+  line-height: 1.7;
 }
 .prose a {
   color: #4285f4;
@@ -208,6 +237,40 @@ body {
 .prose a:hover {
   text-decoration: underline;
   color: #9b72cb;
+}
+.prose strong {
+  color: #f1f5f9;
+  font-weight: 600;
+}
+.prose em {
+  color: #e2e8f0;
+  font-style: italic;
+}
+
+/* ── Blockquotes (Conflict/Gap callouts) ───────────────────── */
+.prose blockquote {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border-left: 3px solid #9b72cb;
+  background: rgba(155, 114, 203, 0.06);
+  border-radius: 0 8px 8px 0;
+  color: #e2e8f0;
+  font-size: 0.95em;
+  line-height: 1.7;
+}
+.prose blockquote p {
+  margin-bottom: 0.5rem;
+}
+.prose blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Horizontal Rules (Section dividers) ───────────────────── */
+.prose hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  margin: 2.5rem 0;
 }
 
 /* ── Markdown Tables & Code ────────────────────────────────── */
@@ -219,6 +282,7 @@ body {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 8px;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 .prose th {
   background-color: rgba(255, 255, 255, 0.05);
@@ -226,10 +290,14 @@ body {
   text-align: left;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--color-glass-border);
+  color: #f1f5f9;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 .prose td {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--color-glass-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 .prose tr:last-child td {
   border-bottom: none;
