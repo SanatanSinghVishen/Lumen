@@ -150,6 +150,14 @@ app.include_router(router)
 @app.get("/health")
 @limiter.limit("30/minute")
 async def health(request: Request):
+    """Minimal health check — kept small for cron-job.org monitoring."""
+    return {"status": "ok", "version": "1.0.0"}
+
+
+@app.get("/health/detailed")
+@limiter.limit("30/minute")
+async def health_detailed(request: Request):
+    """Full diagnostics endpoint for debugging."""
     cost = get_cost_status()
     return {
         "status":          "ok",
