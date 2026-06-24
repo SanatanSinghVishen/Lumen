@@ -104,10 +104,16 @@ export default function ReviewPage() {
   const handleAction = async (action) => {
     setSubmitting(true);
     try {
-      await authFetch(`/approve/${thread_id}`, {
+      const res = await authFetch(`/approve/${thread_id}`, {
         method: "POST",
         body: JSON.stringify({ action, notes: feedback }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err?.detail?.message || "Failed to submit. Please try again.");
+        setSubmitting(false);
+        return;
+      }
       if (action === "approve") {
         navigate(`/result/${thread_id}`);
       } else {

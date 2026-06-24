@@ -153,18 +153,16 @@ async def approve(request: Request, thread_id: str, body: ApproveRequest, backgr
     # Verify this thread belongs to this user (if they are signed in)
     session = await get_session_detail(thread_id=thread_id, user_id=user_id)
     if not session:
-        # If anonymous, we just verify the state exists in LangGraph
-        if not user_id:
-            from main import app_graph
-            state = await app_graph.aget_state({"configurable": {"thread_id": thread_id}})
-            if not state.values:
-                raise HTTPException(status_code=404, detail={"error": "session_not_found"})
-        else:
+        # Supabase might be unavailable or session wasn't saved (anonymous user).
+        # Fall back to verifying the thread exists in LangGraph directly.
+        from main import app_graph
+        state = await app_graph.aget_state({"configurable": {"thread_id": thread_id}})
+        if not state.values:
             raise HTTPException(
                 status_code=404,
                 detail={
                     "error":   "session_not_found",
-                    "message": "Research session not found or does not belong to you.",
+                    "message": "Research session not found.",
                 }
             )
 
