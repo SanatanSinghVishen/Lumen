@@ -68,7 +68,7 @@ async def lifespan(app):
     yield  # app runs here
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -147,11 +147,12 @@ app.add_middleware(
 
 app.include_router(router)
 
+@app.head("/health")
 @app.get("/health")
 @limiter.limit("30/minute")
 async def health(request: Request):
     """Minimal health check — kept small for cron-job.org monitoring."""
-    return {"status": "ok", "version": "1.0.0"}
+    return PlainTextResponse("OK")
 
 
 @app.get("/health/detailed")
