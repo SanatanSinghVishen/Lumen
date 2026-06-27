@@ -9,11 +9,13 @@ user isolation is enforced at the API layer via Clerk JWT verification.
 import os
 import logging
 from typing import Optional
+from functools import lru_cache
 
 logger = logging.getLogger("lumen.database")
 
+@lru_cache(maxsize=1)
 def get_supabase():
-    """Returns a Supabase client with service role key."""
+    """Returns a cached Supabase client with service role key."""
     from supabase import create_client
     url = os.getenv("SUPABASE_URL", "")
     key = os.getenv("SUPABASE_SERVICE_KEY", "")
