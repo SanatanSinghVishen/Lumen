@@ -19,8 +19,25 @@ jobs:
             echo "POSTGRES_URL secret is not set in GitHub repository secrets."
             exit 1
           fi
+          
           # Install postgresql-client
           sudo apt-get update
           sudo apt-get install -y postgresql-client
+          
+          # URL-encode the password in the connection string to handle special characters like '#' and '/'
+          # which would otherwise break the psql connection string parser.
+          export ENCODED_URL=$(node -e '
+            const urlStr = process.env.POSTGRES_URL;
+            const match = urlStr.match(/^postgresql:\/\/([^:]+):(.+)@([^:]+):(\d+)\/(.+)$/);
+            if (match) {
+              const [, user, pass, host, port, db] = match;
+              let decodedPass = pass;
+              try { decodedPass = decodeURIComponent(pass); } catch(e) {}
+              console.log(`postgresql://${user}:${encodeURIComponent(decodedPass)}@${host}:${port}/${db}`);
+            } else {
+              console.log(urlStr);
+            }
+          ')
+          
           # Execute a simple query to keep the database active
-          psql "$POSTGRES_URL" -c "SELECT 1;"
+          psql "$ENCODED_URL" -c "SELECT 1;"
