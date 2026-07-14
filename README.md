@@ -344,5 +344,5 @@ Found a bug? Have an idea? Feel free to:
 ---
 
 <p align="center">
-  <sub>Built with ☕ and curiosity. If LUMEN helped you, consider giving it a ⭐ on GitHub!</sub>
+  <sub>Built with ☕ and curiosity. If LUMEN helped you, consider giving it a ⭐ on GitHub.</sub>
 </p>
