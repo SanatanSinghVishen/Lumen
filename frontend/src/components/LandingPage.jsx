@@ -311,26 +311,25 @@ export default function LandingPage() {
         </motion.div>
         
         <motion.div layout variants={staggerItem} className="flex justify-center items-center mb-6 overflow-hidden">
-          <motion.h1 layout className="text-[48px] sm:text-[56px] font-bold leading-[1.1] tracking-tight flex items-center text-gradient-shimmer">
-            <span className="relative flex overflow-hidden mr-3 h-[1.2em] items-center">
-              <AnimatePresence mode="popLayout">
+          <h1 className="text-[48px] sm:text-[56px] font-bold leading-[1.1] tracking-tight flex items-center justify-center">
+            <span className="relative inline-flex overflow-hidden mr-3 h-[1.25em] items-center justify-center">
+              <AnimatePresence mode="wait">
                 <motion.span
-                  layout
                   key={headingWord}
-                  initial={{ y: 50, opacity: 0 }}
+                  initial={{ y: 30, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -50, opacity: 0 }}
-                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                  className="whitespace-nowrap"
+                  exit={{ y: -30, opacity: 0 }}
+                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                  className="text-gradient-shimmer whitespace-nowrap inline-block"
                 >
                   {headingWord}
                 </motion.span>
               </AnimatePresence>
             </span>
-            <motion.span layout className="whitespace-nowrap">
+            <span className="text-gradient-shimmer whitespace-nowrap inline-block">
               anything.
-            </motion.span>
-          </motion.h1>
+            </span>
+          </h1>
         </motion.div>
         <motion.h2 variants={staggerItem} className="text-[28px] sm:text-[36px] font-medium leading-[1.1] tracking-tight mb-6 text-text drop-shadow-md">
           Verified by AI, approved by you.
