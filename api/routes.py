@@ -403,16 +403,23 @@ async def upload_documents(
 
         validated_files.append((f.filename, content))
 
-    # Parse text from the file (fast — no embedding yet)
+    # Parse text from the file (fast — layout-aware Markdown extraction for PDF)
     filename, content_bytes = validated_files[0]
     if filename.lower().endswith(".pdf"):
         try:
-            from pypdf import PdfReader
-            import io
-            reader = PdfReader(io.BytesIO(content_bytes))
-            text = "\n\n".join(page.extract_text() or "" for page in reader.pages)
+            import fitz
+            import pymupdf4llm
+            doc = fitz.open(stream=content_bytes, filetype="pdf")
+            text = pymupdf4llm.to_markdown(doc)
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to parse PDF: {str(e)}")
+            # Fallback to pypdf if pymupdf4llm encounters an unusual format
+            try:
+                from pypdf import PdfReader
+                import io
+                reader = PdfReader(io.BytesIO(content_bytes))
+                text = "\n\n".join(page.extract_text() or "" for page in reader.pages)
+            except Exception as inner_e:
+                raise HTTPException(status_code=400, detail=f"Failed to parse PDF: {str(e)}")
     else:
         text = content_bytes.decode("utf-8", errors="replace")
 

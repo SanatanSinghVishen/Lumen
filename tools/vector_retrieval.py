@@ -93,12 +93,42 @@ collection = client.get_or_create_collection(
     metadata={"hnsw:space": "cosine"},
 )
 
-# ── Text Splitter ──────────────────────────────────────────────────────────
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,
-    chunk_overlap=200,
-    separators=["\n\n", "\n", ". ", " ", ""],
+# ── Structure & Table-Aware Text Splitters ─────────────────────────────────
+from langchain_text_splitters import MarkdownHeaderTextSplitter
+
+markdown_header_splitter = MarkdownHeaderTextSplitter(
+    headers_to_split_on=[
+        ("#", "Header 1"),
+        ("##", "Header 2"),
+        ("###", "Header 3"),
+    ],
+    strip_headers=False,
 )
+
+markdown_text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1200,
+    chunk_overlap=200,
+    separators=["\n\n# ", "\n\n## ", "\n\n### ", "\n\n", "\n|", "\n", ". ", " ", ""],
+)
+
+
+def chunk_content(content: str) -> list[str]:
+    """
+    Structure-aware chunking for Markdown documents and plain text.
+    First splits by section headers if present, keeping tables intact.
+    """
+    if "#" in content or "|" in content:
+        try:
+            header_docs = markdown_header_splitter.split_text(content)
+            chunks = []
+            for doc in header_docs:
+                sub_chunks = markdown_text_splitter.split_text(doc.page_content)
+                chunks.extend(sub_chunks)
+            if chunks:
+                return chunks
+        except Exception:
+            pass
+    return markdown_text_splitter.split_text(content)
 
 
 # ── LangChain-compatible Embeddings wrapper ────────────────────
@@ -129,7 +159,7 @@ def ingest_file(filename: str, content: str) -> dict:
     # Delete old chunks for this filename (idempotent re-upload)
     _delete_file_chunks(filename)
 
-    chunks = text_splitter.split_text(content)
+    chunks = chunk_content(content)
 
     if not chunks:
         return {"filename": filename, "chunks": 0, "status": "empty"}

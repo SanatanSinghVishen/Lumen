@@ -15,7 +15,8 @@ python-dotenv
 langsmith>=0.1.0
 python-multipart
 
-# PDF parsing for RAG uploads
+# PDF parsing for RAG uploads (layout & table-aware Markdown extraction)
+pymupdf4llm>=0.0.17
 pypdf
 
 # Google Embedding API (free tier) — replaces local ONNX embeddings

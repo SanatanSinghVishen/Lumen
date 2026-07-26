@@ -44,6 +44,7 @@ SYSTEM_PROMPT = """You are an expert research analyst. Given web search results 
 ## QUALITY RULES:
 - Write in formal, third-person academic tone
 - Merge overlapping information from multiple sources into cohesive paragraphs
+- **Document Context & Tables**: Uploaded documents are provided as structured Markdown. Pay special attention to Markdown tables (`| Col 1 | Col 2 |`) and section headers (`#`), accurately synthesizing numbers, metrics, and tabular evidence into the report.
 - Every factual claim must have a citation marker [N]
 - Ensure logical flow between sections with smooth transitions
 - Keep paragraphs focused (3-6 sentences each)
