@@ -449,8 +449,8 @@ export default function LandingPage() {
                   </div>
                 )}
 
-                {(processingUploads.length > 0 || uploadStatus?.type === "processing") && (
-                  <TechFactBanner className="mt-3 max-w-xl" />
+                {(submitting || processingUploads.length > 0 || uploadStatus?.type === "processing") && (
+                  <TechFactBanner className="mt-3 max-w-xl mx-auto" />
                 )}
               </motion.div>
             )}

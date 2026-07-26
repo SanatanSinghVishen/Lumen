@@ -19,25 +19,25 @@ export default function TechFactBanner({ className = "" }) {
   useEffect(() => {
     const timer = setInterval(() => {
       setIndex((prev) => (prev + 1) % TECH_FACTS.length);
-    }, 6000);
+    }, 5000);
     return () => clearInterval(timer);
   }, []);
 
   return (
     <div className={`w-full ${className}`}>
-      <div className="glass-panel px-4 py-3 border border-[rgba(255,255,255,0.08)] bg-[#0d1117]/80 backdrop-blur-md rounded-xl flex items-center gap-3 overflow-hidden shadow-lg">
+      <div className="glass-panel px-4 py-3 border border-[rgba(255,255,255,0.08)] bg-[#0d1117]/90 backdrop-blur-md rounded-xl flex items-center gap-3 overflow-hidden shadow-lg min-h-[48px]">
         <div className="p-1.5 rounded-lg bg-gemini-purple/10 text-gemini-purple border border-gemini-purple/20 shrink-0">
           <IconSparkles size={16} className="animate-pulse" />
         </div>
-        <div className="flex-1 overflow-hidden h-[1.5em] relative flex items-center">
+        <div className="flex-1 overflow-hidden relative flex items-center min-h-[24px]">
           <AnimatePresence mode="wait">
             <motion.p
               key={index}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="text-[12px] text-textMuted/90 font-light truncate"
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="text-[12px] text-textMuted font-light leading-snug"
             >
               {TECH_FACTS[index]}
             </motion.p>
