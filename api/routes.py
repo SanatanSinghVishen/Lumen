@@ -354,7 +354,8 @@ MAX_FILES_PER_REQ = 3      # max 3 files per upload request
 @limiter.limit("5/10minute")
 async def upload_documents(
     request:  Request,
-    file:    UploadFile = File(...), # Changed files to file to match existing frontend code, but still enforcing limits
+    background_tasks: BackgroundTasks,
+    file:    UploadFile = File(...),
 ):
     # Support both single `file` and multiple `files` if needed, but frontend sends single `file`.
     files = [file]
@@ -402,9 +403,7 @@ async def upload_documents(
 
         validated_files.append((f.filename, content))
 
-    # Existing embedding/ChromaDB logic
-    from tools.vector_retrieval import ingest_file
-    
+    # Parse text from the file (fast — no embedding yet)
     filename, content_bytes = validated_files[0]
     if filename.lower().endswith(".pdf"):
         try:
@@ -420,8 +419,48 @@ async def upload_documents(
     if not text.strip():
         raise HTTPException(status_code=400, detail="File is empty or could not be parsed.")
 
-    result = ingest_file(filename, text)
-    return result
+    # ── Background processing: chunk + embed via Google API ──────────
+    from upload_tasks import create_task, complete_task, fail_task
+    
+    task_id = str(uuid.uuid4())
+    create_task(task_id, filename)
+
+    def process_document(task_id: str, filename: str, text: str):
+        """Background task: chunk text and embed via Google API."""
+        try:
+            from tools.vector_retrieval import ingest_file
+            result = ingest_file(filename, text)
+            complete_task(task_id, result.get("chunks", 0))
+        except Exception as e:
+            import logging
+            logging.getLogger("lumen").error(
+                "Background upload failed for task %s: %s", task_id, str(e)
+            )
+            fail_task(task_id, str(e))
+
+    background_tasks.add_task(process_document, task_id, filename, text)
+
+    # Return immediately — frontend will poll /upload/status/{task_id}
+    return {"task_id": task_id, "filename": filename, "status": "processing"}
+
+
+@router.get("/upload/status/{task_id}")
+@limiter.limit("60/minute")
+async def upload_status(request: Request, task_id: str):
+    """Returns the current status of a background upload task."""
+    from upload_tasks import get_task
+    task = get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail={"error": "task_not_found"})
+    return task
+
+
+@router.get("/upload/active")
+@limiter.limit("60/minute")
+async def active_uploads(request: Request):
+    """Returns all uploads currently being processed (status='processing')."""
+    from upload_tasks import get_active_tasks
+    return {"processing": get_active_tasks()}
 
 
 @router.get("/documents")
@@ -435,3 +474,4 @@ async def clear_documents():
     from tools.vector_retrieval import delete_collection
     delete_collection()
     return {"status": "cleared"}
+

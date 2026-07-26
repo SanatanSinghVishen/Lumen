@@ -12,5 +12,7 @@ services:
         sync: false
       - key: TAVILY_API_KEY
         sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
       - key: LANGCHAIN_TRACING_V2
         value: false

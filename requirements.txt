@@ -18,6 +18,9 @@ python-multipart
 # PDF parsing for RAG uploads
 pypdf
 
+# Google Embedding API (free tier) — replaces local ONNX embeddings
+google-genai>=1.0.0
+
 # Postgres checkpointer
 langgraph-checkpoint-postgres>=2.0.0
 psycopg[binary,pool]>=3.1.0

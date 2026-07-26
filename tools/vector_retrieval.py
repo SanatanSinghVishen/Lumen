@@ -1,8 +1,8 @@
 """
 vector_retrieval.py
 ───────────────────
-Real RAG implementation using ChromaDB with its built-in
-DefaultEmbeddingFunction (all-MiniLM-L6-v2 via ONNX runtime).
+Real RAG implementation using ChromaDB with Google's text-embedding-004 API
+(free tier via Google AI Studio).
 
 Provides:
   - ingest_file()       : chunk text and store in ChromaDB
@@ -15,7 +15,7 @@ Provides:
 import os
 import logging
 import chromadb
-from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
+from google import genai
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 logger = logging.getLogger("lumen.rag")
@@ -24,13 +24,72 @@ logger = logging.getLogger("lumen.rag")
 os.makedirs("documents", exist_ok=True)
 os.makedirs("chroma_db", exist_ok=True)
 
+# ── Google Embedding API Setup ─────────────────────────────────────────────
+EMBEDDING_MODEL = "gemini-embedding-001"
+EMBEDDING_DIMS = 3072  # gemini-embedding-001 output dimensionality
+
+# Lazy-init: the client is created on first use, not at import time.
+# This ensures load_dotenv() has run before we read GOOGLE_API_KEY.
+_genai_client = None
+
+
+def _get_client():
+    global _genai_client
+    if _genai_client is None:
+        api_key = os.getenv("GOOGLE_API_KEY", "")
+        if not api_key:
+            raise ValueError(
+                "GOOGLE_API_KEY is not set. "
+                "Get a free key at https://aistudio.google.com/apikey"
+            )
+        _genai_client = genai.Client(api_key=api_key)
+    return _genai_client
+
+
+class GoogleEmbeddingFunction:
+    """
+    ChromaDB-compatible embedding function using Google's gemini-embedding-001.
+    Replaces the local ONNX DefaultEmbeddingFunction to avoid 3-4 minute
+    embedding times on Render's throttled free-tier CPU.
+    """
+
+    def name(self) -> str:
+        return "google-gemini-embedding"
+
+    def __call__(self, input: list[str]) -> list[list[float]]:
+        if not input:
+            return []
+
+        client = _get_client()
+
+        # Google's embedding API supports batching.
+        # Batch in groups of 100 to stay within API limits comfortably.
+        all_embeddings = []
+        batch_size = 100
+
+        for i in range(0, len(input), batch_size):
+            batch = input[i : i + batch_size]
+            result = client.models.embed_content(
+                model=EMBEDDING_MODEL,
+                contents=batch,
+            )
+            all_embeddings.extend([e.values for e in result.embeddings])
+
+        return all_embeddings
+
+    def embed_query(self, input: list[str]) -> list[list[float]]:
+        """Called by ChromaDB during query/search operations."""
+        return self.__call__(input)
+
+
+google_ef = GoogleEmbeddingFunction()
+
 # ── ChromaDB Setup ─────────────────────────────────────────────────────────
 client = chromadb.PersistentClient(path="./chroma_db")
-default_ef = DefaultEmbeddingFunction()  # all-MiniLM-L6-v2 (384-dim, ONNX)
 
 collection = client.get_or_create_collection(
     name="lumen_documents",
-    embedding_function=default_ef,
+    embedding_function=google_ef,
     metadata={"hnsw:space": "cosine"},
 )
 
@@ -44,10 +103,10 @@ text_splitter = RecursiveCharacterTextSplitter(
 
 # ── LangChain-compatible Embeddings wrapper ────────────────────
 class ChromaEmbeddings:
-    """Wraps ChromaDB's DefaultEmbeddingFunction for LangChain compatibility."""
+    """Wraps GoogleEmbeddingFunction for LangChain compatibility."""
 
     def __init__(self):
-        self._ef = default_ef
+        self._ef = google_ef
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         return self._ef(texts)
@@ -78,23 +137,13 @@ def ingest_file(filename: str, content: str) -> dict:
     ids = [f"{filename}::chunk_{i}" for i in range(len(chunks))]
     metadatas = [{"source": filename, "chunk_index": i} for i in range(len(chunks))]
 
-    # Process in small batches to prevent OOM crashes on the Render free tier
-    # ONNX runtime allocates massive memory if it tries to embed 100+ chunks at once
-    batch_size = 20
-    import gc
-    for i in range(0, len(chunks), batch_size):
-        batch_chunks = chunks[i:i + batch_size]
-        batch_ids = ids[i:i + batch_size]
-        batch_metas = metadatas[i:i + batch_size]
-        
-        collection.add(
-            documents=batch_chunks,
-            ids=batch_ids,
-            metadatas=batch_metas,
-        )
-        
-        # Force garbage collection to free ONNX runtime tensors immediately
-        gc.collect()
+    # Google API handles batching internally — no need for gc.collect()
+    # workarounds that were required for local ONNX inference
+    collection.add(
+        documents=chunks,
+        ids=ids,
+        metadatas=metadatas,
+    )
 
     logger.info("Ingested %d chunks from '%s'", len(chunks), filename)
     return {"filename": filename, "chunks": len(chunks), "status": "success"}
@@ -147,7 +196,7 @@ def delete_collection():
     client.delete_collection("lumen_documents")
     collection = client.get_or_create_collection(
         name="lumen_documents",
-        embedding_function=default_ef,
+        embedding_function=google_ef,
         metadata={"hnsw:space": "cosine"},
     )
     logger.info("Document collection cleared")

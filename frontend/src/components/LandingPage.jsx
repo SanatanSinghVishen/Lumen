@@ -26,6 +26,8 @@ export default function LandingPage() {
   const [uploadStatus, setUploadStatus] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
+  const [processingUploads, setProcessingUploads] = useState([]); // {task_id, filename}
+  const pollIntervalsRef = useRef(new Map()); // task_id -> intervalId
   const fileInputRef = useRef(null);
   const { getToken } = useAuth();
 
@@ -102,6 +104,41 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Cleanup polling intervals on unmount
+  useEffect(() => {
+    return () => {
+      pollIntervalsRef.current.forEach((intervalId) => clearInterval(intervalId));
+      pollIntervalsRef.current.clear();
+    };
+  }, []);
+
+  const startPolling = (taskId, filename) => {
+    const intervalId = setInterval(async () => {
+      try {
+        const res = await authFetch(`/upload/status/${taskId}`);
+        if (!res.ok) return;
+        const task = await res.json();
+
+        if (task.status === "ready") {
+          clearInterval(intervalId);
+          pollIntervalsRef.current.delete(taskId);
+          setProcessingUploads((prev) => prev.filter((t) => t.task_id !== taskId));
+          setUploadStatus({ type: "success", message: `${task.filename} — ${task.chunks} chunks indexed` });
+          fetchDocuments();
+        } else if (task.status === "failed") {
+          clearInterval(intervalId);
+          pollIntervalsRef.current.delete(taskId);
+          setProcessingUploads((prev) => prev.filter((t) => t.task_id !== taskId));
+          setUploadStatus({ type: "error", message: task.error || "Processing failed" });
+        }
+      } catch {
+        // Polling error — keep trying
+      }
+    }, 2000);
+
+    pollIntervalsRef.current.set(taskId, intervalId);
+  };
+
   const handleUpload = async (file) => {
     if (!file) return;
     const allowed = [".pdf", ".txt", ".md", ".csv"];
@@ -132,10 +169,16 @@ export default function LandingPage() {
       };
 
       xhr.onload = () => {
+        setUploading(false);
+        setUploadProgress(0);
+
         if (xhr.status >= 200 && xhr.status < 300) {
           const json = JSON.parse(xhr.responseText);
-          setUploadStatus({ type: "success", message: `${json.filename} — ${json.chunks} chunks indexed` });
-          fetchDocuments();
+          // Backend now returns instantly with {task_id, filename, status: "processing"}
+          const { task_id, filename: fname } = json;
+          setProcessingUploads((prev) => [...prev, { task_id, filename: fname }]);
+          setUploadStatus({ type: "processing", message: `Processing ${fname}...` });
+          startPolling(task_id, fname);
         } else {
           let errorMsg = "Upload failed";
           try {
@@ -144,8 +187,6 @@ export default function LandingPage() {
           } catch (e) {}
           setUploadStatus({ type: "error", message: errorMsg });
         }
-        setUploading(false);
-        setUploadProgress(0);
       };
 
       xhr.onerror = () => {
@@ -360,10 +401,11 @@ export default function LandingPage() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   type="submit" 
-                  disabled={submitting || !query.trim()}
+                  disabled={submitting || !query.trim() || processingUploads.length > 0}
+                  title={processingUploads.length > 0 ? "Wait for document processing to complete" : undefined}
                   className="h-12 px-6 bg-gradient-primary text-white text-[14px] font-medium rounded-[16px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-shadow shadow-lg hover:shadow-xl"
                 >
-                  Research <IconArrowRight size={18} className="ml-2" stroke={2} />
+                  {processingUploads.length > 0 ? "Processing..." : "Research"} <IconArrowRight size={18} className="ml-2" stroke={2} />
                 </motion.button>
               </div>
             </motion.div>
@@ -398,8 +440,12 @@ export default function LandingPage() {
                 )}
 
                 {uploadStatus && (
-                  <div className={`text-[12px] text-left ${uploadStatus.type === "success" ? "text-green-400" : "text-red-400"}`}>
-                    {uploadStatus.message}
+                  <div className={`text-[12px] text-left ${
+                    uploadStatus.type === "success" ? "text-green-400" 
+                    : uploadStatus.type === "processing" ? "text-gemini-cyan animate-pulse" 
+                    : "text-red-400"
+                  }`}>
+                    {uploadStatus.type === "processing" && "⏳ "}{uploadStatus.message}
                   </div>
                 )}
               </motion.div>
