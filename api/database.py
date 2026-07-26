@@ -126,8 +126,8 @@ async def get_session_detail(thread_id: str, user_id: Optional[str]) -> Optional
         if user_id:
             query = query.eq("user_id", user_id)
             
-        result = query.single().execute()
-        return result.data
+        result = query.limit(1).execute()
+        return result.data[0] if result.data else None
     except Exception as e:
-        logger.warning("Failed to fetch session detail: %s", str(e))
+        logger.debug("Failed to fetch session detail: %s", str(e))
         return None
