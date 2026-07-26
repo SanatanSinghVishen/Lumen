@@ -25,19 +25,19 @@ export default function TechFactBanner({ className = "" }) {
 
   return (
     <div className={`w-full ${className}`}>
-      <div className="glass-panel px-4 py-3 border border-[rgba(255,255,255,0.08)] bg-[#0d1117]/90 backdrop-blur-md rounded-xl flex items-center gap-3 overflow-hidden shadow-lg min-h-[48px]">
-        <div className="p-1.5 rounded-lg bg-gemini-purple/10 text-gemini-purple border border-gemini-purple/20 shrink-0">
-          <IconSparkles size={16} className="animate-pulse" />
+      <div className="glass-panel px-5 py-3.5 border border-[rgba(255,255,255,0.1)] bg-[#0d1117]/95 backdrop-blur-md rounded-2xl flex items-center gap-3.5 shadow-xl min-h-[56px]">
+        <div className="p-2 rounded-xl bg-gemini-purple/15 text-gemini-purple border border-gemini-purple/30 shrink-0">
+          <IconSparkles size={18} className="animate-pulse" />
         </div>
-        <div className="flex-1 overflow-hidden relative flex items-center min-h-[24px]">
+        <div className="flex-1 min-w-0">
           <AnimatePresence mode="wait">
             <motion.p
               key={index}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.35, ease: "easeOut" }}
-              className="text-[12px] text-textMuted font-light leading-snug"
+              className="text-[13px] text-textMuted/90 font-light leading-relaxed text-left break-words"
             >
               {TECH_FACTS[index]}
             </motion.p>
