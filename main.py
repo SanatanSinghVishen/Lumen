@@ -12,6 +12,9 @@ os.environ["NUMEXPR_NUM_THREADS"] = "1"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 # Force PyArrow (used by datasets/ragas) to use system allocator instead of hoarding a memory pool
 os.environ["ARROW_DEFAULT_MEMORY_POOL"] = "system"
+# Suppress ONNX Runtime GPU device discovery warnings on CPU-only containers (e.g. Render)
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["ORT_LOGGING_LEVEL"] = "3"
 
 import logging
 from contextlib import asynccontextmanager
