@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ErrorScreen from "../components/ErrorScreen";
+import TechFactBanner from "../components/TechFactBanner";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeUp, staggerContainer, staggerItem } from "../utils/motionVariants";
 
@@ -149,6 +150,8 @@ export default function LoadingPage() {
             );
           })}
         </motion.div>
+        
+        <TechFactBanner className="mt-8" />
       </div>
 
       {/* Right: Glass Card Preview */}

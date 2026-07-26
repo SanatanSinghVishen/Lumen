@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { IconSitemap, IconWorldSearch, IconBrain, IconUserCheck, IconSearch, IconArrowRight, IconUpload, IconFile, IconCheck, IconX, IconTrash, IconPaperclip, IconSparkles, IconActivity } from "@tabler/icons-react";
 import { API_URL } from "../App";
 import ErrorScreen from "./ErrorScreen";
+import TechFactBanner from "./TechFactBanner";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeUp, staggerContainer, staggerItem, scaleIn } from "../utils/motionVariants";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch";
@@ -446,6 +447,10 @@ export default function LandingPage() {
                   }`}>
                     {uploadStatus.type === "processing" && "⏳ "}{uploadStatus.message}
                   </div>
+                )}
+
+                {(processingUploads.length > 0 || uploadStatus?.type === "processing") && (
+                  <TechFactBanner className="mt-3 max-w-xl" />
                 )}
               </motion.div>
             )}
