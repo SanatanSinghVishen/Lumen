@@ -311,7 +311,7 @@ export default function LandingPage() {
         </motion.div>
         
         <motion.div layout variants={staggerItem} className="flex justify-center items-center mb-6 overflow-hidden">
-          <motion.h1 layout className="text-[48px] sm:text-[56px] font-bold leading-[1.1] tracking-tight flex items-center">
+          <motion.h1 layout className="text-[48px] sm:text-[56px] font-bold leading-[1.1] tracking-tight flex items-center text-gradient-shimmer">
             <span className="relative flex overflow-hidden mr-3 h-[1.2em] items-center">
               <AnimatePresence mode="popLayout">
                 <motion.span
@@ -321,13 +321,13 @@ export default function LandingPage() {
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -50, opacity: 0 }}
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                  className="text-gradient-shimmer whitespace-nowrap"
+                  className="whitespace-nowrap"
                 >
                   {headingWord}
                 </motion.span>
               </AnimatePresence>
             </span>
-            <motion.span layout className="text-gradient-shimmer whitespace-nowrap">
+            <motion.span layout className="whitespace-nowrap">
               anything.
             </motion.span>
           </motion.h1>
