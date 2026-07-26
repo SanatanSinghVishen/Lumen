@@ -177,6 +177,7 @@ async def approve(request: Request, thread_id: str, body: ApproveRequest, backgr
         # Save final report and scores to history
         await update_session(
             thread_id=thread_id,
+            user_id=user_id,
             status="approved",
             final_report=final_report,
             eval_score=state.values.get("eval_score"),
@@ -187,7 +188,7 @@ async def approve(request: Request, thread_id: str, body: ApproveRequest, backgr
         )
     else:
         # If not approved, it's a revision, so status goes back to running
-        await update_session(thread_id=thread_id, status="running")
+        await update_session(thread_id=thread_id, user_id=user_id, status="running")
 
     command_payload = {
         "action": body.action,

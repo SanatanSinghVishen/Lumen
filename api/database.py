@@ -57,6 +57,8 @@ async def create_session(
 
 async def update_session(
     thread_id:         str,
+    user_id:           Optional[str]  = None,
+    query:             Optional[str]  = None,
     status:            Optional[str]  = None,
     final_report:      Optional[str]  = None,
     eval_score:        Optional[float]= None,
@@ -81,14 +83,30 @@ async def update_session(
         if not updates:
             return
 
-        # If it's an anonymous user, we don't track it in DB, so just return
-        # But we don't know the user_id here, so we'll try to update and if it fails/matches 0 rows, we ignore
         response = db.table("research_sessions") \
           .update(updates) \
           .eq("thread_id", thread_id) \
           .execute()
 
-        if response.data:
+        # If update matched 0 rows but we have a user_id, self-heal by creating the session record now
+        if not response.data and user_id:
+            if not query:
+                try:
+                    from main import app_graph
+                    state = await app_graph.aget_state({"configurable": {"thread_id": thread_id}})
+                    query = state.values.get("query", "Research Query") if state.values else "Research Query"
+                except Exception:
+                    query = "Research Query"
+
+            record = {
+                "user_id":   user_id,
+                "thread_id": thread_id,
+                "query":     query,
+                **updates,
+            }
+            db.table("research_sessions").insert(record).execute()
+            logger.info("Session created on approval for user_id=%s thread_id=%s", user_id, thread_id)
+        elif response.data:
             logger.info("Session updated: thread_id=%s updates=%s", thread_id, list(updates.keys()))
     except Exception as e:
         logger.warning("Failed to update session record: %s", str(e))
