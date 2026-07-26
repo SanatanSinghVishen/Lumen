@@ -56,26 +56,32 @@ async def synthesis_node(state: AgentState, config: RunnableConfig) -> dict:
     web_res = state.get("web_results", [])
     rag_res = state.get("rag_results", [])
     
-    # ── Context trimming ───────────────────────────────────────────────
-    # Groq free tier: 12,000 TPM. We must keep input under ~8K tokens
-    # (~32K chars) to leave room for system prompt + output tokens.
-    # Strategy: top 3 results per source, each truncated to 1500 chars.
-    MAX_RESULTS = 3
-    MAX_CHARS_PER_RESULT = 1500
+    # ── Context Reranking & Structuring ─────────────────────────────────
+    # Sort RAG results by score descending so top hybrid search chunks are prioritized
+    sorted_rag = sorted(rag_res, key=lambda x: x.get("score", 0.0), reverse=True)
+    
+    MAX_RAG_RESULTS = 5
+    MAX_WEB_RESULTS = 5
+    MAX_CHARS_PER_RESULT = 1800
     
     def trim(text: str) -> str:
         return text[:MAX_CHARS_PER_RESULT] + "..." if len(text) > MAX_CHARS_PER_RESULT else text
     
-    web_text = "\n\n".join([
-        f"Source: {r.get('url', 'Web')}\nContent: {trim(r.get('content', r.get('snippet', '')))}"
-        for r in web_res[:MAX_RESULTS]
-    ])
-    rag_text = "\n\n".join([
-        f"Source: {r.get('source', 'Document')}\nContent: {trim(r.get('content', ''))}"
-        for r in rag_res[:MAX_RESULTS]
-    ])
+    rag_snippets = []
+    for idx, r in enumerate(sorted_rag[:MAX_RAG_RESULTS], 1):
+        src = r.get("source", f"Document {idx}")
+        score_info = f" (relevance score: {r.get('score')})" if r.get("score") is not None else ""
+        rag_snippets.append(f"### [Doc {idx}] Source: {src}{score_info}\n{trim(r.get('content', ''))}")
+        
+    web_snippets = []
+    for idx, r in enumerate(web_res[:MAX_WEB_RESULTS], 1):
+        url = r.get("url", f"Web Source {idx}")
+        web_snippets.append(f"### [Web {idx}] Source: {url}\n{trim(r.get('content', r.get('snippet', '')))}")
+        
+    rag_text = "\n\n".join(rag_snippets) if rag_snippets else "No relevant document chunks retrieved."
+    web_text = "\n\n".join(web_snippets) if web_snippets else "No relevant web results retrieved."
     
-    content = f"WEB RESULTS:\n{web_text}\n\nDOCUMENT RESULTS:\n{rag_text}"
+    content = f"=== UPLOADED DOCUMENT CONTEXTS ===\n{rag_text}\n\n=== WEB SEARCH CONTEXTS ===\n{web_text}"
     
     eval_feedback = state.get("eval_feedback")
     draft_report = state.get("draft_report")

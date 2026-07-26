@@ -179,31 +179,98 @@ def ingest_file(filename: str, content: str) -> dict:
     return {"filename": filename, "chunks": len(chunks), "status": "success"}
 
 
+import re
+from rank_bm25 import BM25Okapi
+
+
+def _tokenize(text: str) -> list[str]:
+    """Simple alphanumeric tokenizer for BM25 keyword matching."""
+    return [w.lower() for w in re.findall(r"\w+", text)]
+
+
 def search_documents(query: str, n_results: int = 5) -> list[dict]:
     """
-    Performs real vector similarity search against ChromaDB.
-    Returns a list of dicts with 'content', 'source', and 'score'.
+    Performs Hybrid Search (Vector + BM25) with Reciprocal Rank Fusion (RRF).
+    1. Retrieves top semantic vector matches from ChromaDB (gemini-embedding-001).
+    2. Builds an in-memory BM25 index over stored document chunks for keyword precision.
+    3. Fuses both rankings using Reciprocal Rank Fusion (RRF).
+    4. Returns top n_results ranked by fused relevance score.
     """
-    if collection.count() == 0:
+    total_docs = collection.count()
+    if total_docs == 0:
         return []
 
-    results = collection.query(
+    # 1. Vector Similarity Search from ChromaDB
+    fetch_k = min(n_results * 3, total_docs)
+    vector_res = collection.query(
         query_texts=[query],
-        n_results=min(n_results, collection.count()),
+        n_results=fetch_k,
         include=["documents", "metadatas", "distances"],
     )
 
-    documents = []
-    for i in range(len(results["documents"][0])):
-        # cosine distance → similarity:  similarity = 1 - distance
-        dist = results["distances"][0][i] if results["distances"] else 0
-        documents.append({
-            "content": results["documents"][0][i],
-            "source": results["metadatas"][0][i].get("source", "unknown"),
-            "score": round(1.0 - dist, 4),
-        })
+    vector_ranked = []
+    if vector_res and vector_res.get("documents") and vector_res["documents"][0]:
+        for i in range(len(vector_res["documents"][0])):
+            dist = vector_res["distances"][0][i] if vector_res.get("distances") else 0.0
+            vector_ranked.append({
+                "content": vector_res["documents"][0][i],
+                "source": vector_res["metadatas"][0][i].get("source", "unknown"),
+                "vec_score": round(1.0 - dist, 4),
+            })
 
-    return documents
+    # 2. BM25 Keyword Search
+    all_chunks_data = collection.get(include=["documents", "metadatas"])
+    all_docs = all_chunks_data.get("documents", [])
+    all_metas = all_chunks_data.get("metadatas", [])
+
+    if not all_docs:
+        return vector_ranked[:n_results]
+
+    tokenized_corpus = [_tokenize(doc) for doc in all_docs]
+    bm25 = BM25Okapi(tokenized_corpus)
+    tokenized_query = _tokenize(query)
+    bm25_scores = bm25.get_scores(tokenized_query)
+
+    bm25_ranked_indices = sorted(range(len(bm25_scores)), key=lambda i: bm25_scores[i], reverse=True)
+    bm25_ranked = [
+        {
+            "content": all_docs[i],
+            "source": all_metas[i].get("source", "unknown") if i < len(all_metas) else "unknown",
+            "bm25_score": float(bm25_scores[i]),
+        }
+        for i in bm25_ranked_indices if bm25_scores[i] > 0
+    ]
+
+    # 3. Reciprocal Rank Fusion (RRF)
+    k_const = 60
+    rrf_scores = {}
+
+    for rank, item in enumerate(vector_ranked):
+        content = item["content"]
+        rrf_scores[content] = {
+            "content": content,
+            "source": item["source"],
+            "score": 1.0 / (k_const + rank + 1),
+        }
+
+    for rank, item in enumerate(bm25_ranked):
+        content = item["content"]
+        bm25_rrf = 1.0 / (k_const + rank + 1)
+        if content in rrf_scores:
+            rrf_scores[content]["score"] += bm25_rrf
+        else:
+            rrf_scores[content] = {
+                "content": content,
+                "source": item["source"],
+                "score": bm25_rrf,
+            }
+
+    # 4. Sort by combined RRF score and return top n_results
+    fused_results = sorted(rrf_scores.values(), key=lambda x: x["score"], reverse=True)
+    for res in fused_results:
+        res["score"] = round(res["score"], 4)
+
+    return fused_results[:n_results]
 
 
 def list_documents() -> list[dict]:

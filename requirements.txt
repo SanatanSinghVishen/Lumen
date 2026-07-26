@@ -19,6 +19,9 @@ python-multipart
 pymupdf4llm>=0.0.17
 pypdf
 
+# Hybrid Search (BM25 + Vector RRF)
+rank-bm25>=0.2.2
+
 # Google Embedding API (free tier) — replaces local ONNX embeddings
 google-genai>=1.0.0
 
