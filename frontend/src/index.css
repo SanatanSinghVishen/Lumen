@@ -157,6 +157,21 @@ body {
   animation: shimmer 4s linear infinite;
 }
 
+/* ── Continuous Phrase Gradient (Blue -> Purple -> Pink across side-by-side spans) ── */
+.text-gradient-start {
+  background: linear-gradient(90deg, #4285f4 0%, #9b72cb 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-end {
+  background: linear-gradient(90deg, #9b72cb 0%, #eb6f92 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 .bg-gradient-primary {
   background: linear-gradient(135deg, #4285f4, #9b72cb);
 }

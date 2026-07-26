@@ -316,17 +316,17 @@ export default function LandingPage() {
               <AnimatePresence mode="wait">
                 <motion.span
                   key={headingWord}
-                  initial={{ y: 30, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -30, opacity: 0 }}
-                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  className="text-gradient-shimmer whitespace-nowrap inline-block"
+                  initial={{ y: 25, opacity: 0, filter: "blur(4px)" }}
+                  animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+                  exit={{ y: -25, opacity: 0, filter: "blur(4px)" }}
+                  transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                  className="text-gradient-start whitespace-nowrap inline-block"
                 >
                   {headingWord}
                 </motion.span>
               </AnimatePresence>
             </span>
-            <span className="text-gradient-shimmer whitespace-nowrap inline-block">
+            <span className="text-gradient-end whitespace-nowrap inline-block">
               anything.
             </span>
           </h1>
