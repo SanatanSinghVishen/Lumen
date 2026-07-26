@@ -216,7 +216,7 @@ const WorkflowView = () => (
         <DiagramNode icon={<IconSearch size={28} />} title="Looks things up online" techLabel="Web Search" description="Deep scrapes real-time information from across the web using Tavily." color="gemini-cyan" delay={0.35} />
       </div>
       <div className="w-full sm:w-1/2 max-w-[320px]">
-        <DiagramNode icon={<IconDatabase size={28} />} title="Searches your files" techLabel="Document Search" description="Finds relevant paragraphs inside the PDFs/Docs you've uploaded using vector similarity." color="gemini-blue" delay={0.35} />
+        <DiagramNode icon={<IconDatabase size={28} />} title="Searches your files" techLabel="Document Search" description="Searches your uploaded files using Hybrid Search (combining Google AI embeddings with BM25 keyword matching) to locate exact terms, tables, and key sections." color="gemini-blue" delay={0.35} />
       </div>
     </div>
 
@@ -225,7 +225,7 @@ const WorkflowView = () => (
 
     {/* 3. Synthesis */}
     <div className="w-full max-w-[360px]">
-      <DiagramNode icon={<IconPencil size={28} />} title="Writes the first draft" techLabel="Synthesis" description="Merges all the research context into a coherent, structured Markdown report." color="gemini-pink" delay={0.6} />
+      <DiagramNode icon={<IconPencil size={28} />} title="Writes the first draft" techLabel="Synthesis" description="Merges all web findings and document data into a clean, structured Markdown report with clear tables and citations." color="gemini-pink" delay={0.6} />
     </div>
 
     <VerticalLine color="#4285f4" delay={0.7} />
@@ -284,7 +284,7 @@ const ComponentsView = () => (
         <DiagramNode icon={<IconTopologyStar3 size={28} />} title="The assembly line" techLabel="LangGraph Pipeline" description="Routes your question through specialized AI steps, running loops if it needs to fact-check or correct its own mistakes." color="gemini-blue" delay={0.5} />
       </div>
       <div className="w-full lg:w-1/2 max-w-[320px] flex flex-col items-center">
-        <DiagramNode icon={<IconDatabase size={28} />} title="A private library" techLabel="ChromaDB" description="A vector database storing all the files you upload. The agent queries this library to ground its answers in your data." color="gemini-blue" delay={0.6} />
+        <DiagramNode icon={<IconDatabase size={28} />} title="A private library" techLabel="ChromaDB" description="Stores your uploaded files as clean Markdown text and vector numbers (using Google's Embedding API). The system queries this library using Hybrid Search to ground answers in your data." color="gemini-blue" delay={0.6} />
         <motion.div 
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}

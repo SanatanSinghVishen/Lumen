@@ -10,32 +10,32 @@ export default function HowItWorksPage() {
     {
       id: "orchestrator",
       icon: <IconSitemap size={24} stroke={1.5} />,
-      title: "1. Orchestrator Decomposes",
-      desc: "Gemini 2.5 Flash decomposes your query into focused sub-tasks. On retries, it receives the evaluator's feedback and adjusts the subtasks to address gaps identified in the previous attempt."
+      title: "1. Planning & Sub-tasks",
+      desc: "Lumen reads your research topic and breaks it down into small, focused sub-questions so no detail is missed. If a draft needs improvement, it uses feedback to refine its plan."
     },
     {
       id: "search",
       icon: <IconWorldSearch size={24} stroke={1.5} />,
       title: "2. Web & Document Search",
-      desc: "Two agents fan out in parallel: Tavily deep-searches the live web , while the RAG agent queries your uploaded documents in ChromaDB using cosine similarity on all-MiniLM-L6-v2 embeddings."
+      desc: "Parallel agents search the live web and your uploaded documents. Documents are converted into structured Markdown (preserving tables) and searched using Hybrid Search (combining exact keyword matching with Google's embedding model)."
     },
     {
       id: "synthesis",
       icon: <IconPencil size={24} stroke={1.5} />,
-      title: "3. Synthesis (Streaming)",
-      desc: "Both agents fan back in. Gemini 2.5 Flash merges all context into a structured Markdown report via async streaming — tokens flow live to your browser via SSE. Conflicts are flagged with a markers."
+      title: "3. Live Report Writing",
+      desc: "All findings are combined into a clean, structured research report. The text streams live to your screen in real time, formatting data into comparative tables and clear sections."
     },
     {
       id: "evaluator",
       icon: <IconBrain size={24} stroke={1.5} />,
-      title: "4. Dual Evaluation",
-      desc: "Two evaluators run in sequence: FastEval computes Faithfulness and Answer Relevancy, then an LLM-as-Judge scores relevance, groundedness, and completeness. If Overall Score < 0.75, the pipeline retries (up to 3×)."
+      title: "4. Automatic Quality Check",
+      desc: "Before showing you the report, an automated evaluator checks the draft for accuracy, source grounding, and completeness. If quality falls below 75%, it automatically rewrites and improves the draft."
     },
     {
       id: "hitl",
       icon: <IconUserCheck size={24} stroke={1.5} />,
-      title: "5. Human-in-the-Loop",
-      desc: "LangGraph pauses the graph and serializes state to the checkpointer. You review the report with all metrics, then approve to export or reject with feedback to trigger a revision cycle."
+      title: "5. You Review & Approve",
+      desc: "You stay in control. Review the report and quality scores, then click to approve and download your report, or request custom revisions with your own notes."
     },
   ];
 
