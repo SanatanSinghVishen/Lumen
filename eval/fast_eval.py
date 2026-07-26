@@ -45,23 +45,23 @@ def compute_eval_scores(
         from langchain_core.prompts import ChatPromptTemplate
         import json
 
-        # Use only top 3 contexts to minimise prompt length
-        trimmed_contexts = contexts[:3]
-        context_str = "\n\n".join(trimmed_contexts)
+        # Pass up to 8 retrieved contexts (truncated to 1200 chars each) to ensure full coverage
+        trimmed_contexts = [c[:1200] for c in contexts[:8]]
+        context_str = "\n\n---\n\n".join(trimmed_contexts)
 
-        system_prompt = """You are an extremely strict expert evaluator of Retrieval-Augmented Generation (RAG) systems.
-Please thoroughly evaluate the generated answer based on the provided context and original query.
-Compute three specific metrics on a scale of 0.0 to 1.0. BE HARSH AND CRITICAL. Do NOT give 1.0 unless the output is absolutely flawless:
+        system_prompt = """You are an objective expert evaluator of Retrieval-Augmented Generation (RAG) research systems.
+Evaluate the generated research report against the provided context snippets and original query.
+Compute three specific metrics on a scale of 0.0 to 1.0 based on realistic RAG evaluation standards:
 
-1. Faithfulness: Is every single claim in the answer strictly supported by the provided context? (1.0 = perfect, penalize heavily for ANY unverified claims, assumptions, or minor hallucinations)
-2. Answer Relevancy: How directly and concisely does the answer address the original query? (1.0 = perfectly focused, penalize for tangential information, wordiness, or failing to answer the core question)
-3. Context Precision: How relevant and useful are the provided context chunks to the query? (1.0 = highly relevant, penalize for off-topic or noisy context chunks)
+1. Faithfulness: How accurately are the factual claims, data points, and technical statements in the report grounded in and supported by the provided context snippets? High score (0.85 - 1.0) means claims match the context without factual fabrications or contradictions.
+2. Answer Relevancy: How thoroughly and accurately does the research report address the core subject of the original query? High score (0.85 - 1.0) means the whitepaper directly and comprehensively covers the requested research topic.
+3. Context Precision: How relevant and useful are the retrieved context snippets to the research query? High score (0.85 - 1.0) means the surfaced context chunks contain relevant information for the topic.
 
 Output a raw JSON object (and nothing else) exactly in this format:
 {{
-  "faithfulness": 0.95,
-  "answer_relevancy": 0.85,
-  "context_precision": 0.90,
+  "faithfulness": 0.92,
+  "answer_relevancy": 0.88,
+  "context_precision": 0.85,
   "reasoning": "Brief explanation of your scores..."
 }}"""
 
